@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transaction-classifier"
+version = "0.1.0"
+description = "Local ML service that classifies bank transactions into budget categories"
+requires-python = ">=3.10"
+dependencies = [
+    "scikit-learn>=1.4",
+    "pandas>=2.1",
+    "pyarrow",
+    "datasets",
+    "fastapi>=0.110",
+    "uvicorn[standard]",
+    "pydantic>=2.0",
+    "pydantic-settings",
+    "pyyaml",
+    "joblib",
+]
+
+[project.optional-dependencies]
+bert = ["transformers>=4.38", "torch>=2.1", "accelerate"]
+dev = ["pytest", "httpx", "ruff"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

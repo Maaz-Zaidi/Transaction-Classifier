@@ -1,0 +1,32 @@
+# Data and models (large files, downloaded/generated locally)
+data/
+models/
+temp/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Environment
+.env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Serialized models
+*.joblib
+*.pkl
+
+# Parquet files (in project root, data/ already ignored)
+*.parquet
