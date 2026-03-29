@@ -1,6 +1,8 @@
 # Data and models (large files, downloaded/generated locally)
 data/
 models/
+checkpoints/
+runs/
 temp/
 
 # Python
