@@ -449,8 +449,13 @@ rules:
     priority: 100
 
   # ==================== FINANCIAL SERVICES ====================
-  - pattern: "E-TRANSFER"
+  - pattern: "E-TRANSFER-OUT"
     category: "Financial Services"
+    type: contains
+    priority: 200
+
+  - pattern: "E-TRANSFER-IN"
+    category: "Income"
     type: contains
     priority: 200
 
