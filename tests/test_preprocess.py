@@ -44,8 +44,13 @@ from transaction_classifier.data.preprocess import clean_transaction
         # === New prefix patterns ===
         ("Contactless Interac purchase - 4471 HOT CRISPY CHIC", "HOT CRISPY CHIC"),
         ("Online Banking payment - 5824 UNI OTT TUITION", "UNI OTT TUITION"),
-        ("ATM withdrawal - OI820090", ""),
-        ("Mobile cheque deposit - 9842", ""),
+        ("ATM withdrawal - OI820090", "ATM-WITHDRAWAL"),
+        ("ATM WITHDRAWAL - 1234", "ATM-WITHDRAWAL"),
+        ("Mobile cheque deposit - 9842", "MOBILE-DEPOSIT"),
+        ("MOBILE CHEQUE DEPOSIT - 5555", "MOBILE-DEPOSIT"),
+        # Client card fee -> marker instead of empty
+        ("Client Card Replacement Fee", "CARD-REPLACEMENT-FEE"),
+        ("CLIENT CARD REPLACEMENT FEE", "CARD-REPLACEMENT-FEE"),
         ("01339 MACS CONV. STORE KANATA ON", "MACS CONV. STORE"),
         # Toast POS prefix
         ("TST-TAHINIS - 1940 EA OTTAWA ON", "TAHINIS - EA"),
@@ -77,7 +82,10 @@ from transaction_classifier.data.preprocess import clean_transaction
         ("FRESHCO #9620 NEPEAN ON", "FRESHCO"),
         ("SQ *CHAIGUYS NEPEAN ON", "CHAIGUYS"),
         ("*RFBT-RIDEAU CENTRE OTTAWA ON", "RIDEAU CENTRE"),
-        ("AMZN MKTP CA*Z10WY2A31 WWW.AMAZON.CAON", "WWW.AMAZON.CAON"),
+        # Amazon Marketplace -> readable name instead of empty/partial
+        ("AMZN MKTP CA*Z10WY2A31 WWW.AMAZON.CAON", "AMAZON MARKETPLACE"),
+        ("AMZN MKTP CA*DU47K07V3", "AMAZON MARKETPLACE"),
+        ("Amzn Mktp CA*abc123", "AMAZON MARKETPLACE"),
         ("SHAWARMA PRINCE KANATA ON", "SHAWARMA PRINCE"),
         ("MARY BROWNS CHICKEN KANATA ON", "MARY BROWNS CHICKEN"),
         ("CANADA COMPUTERS #30 KANATA ON", "CANADA COMPUTERS"),
