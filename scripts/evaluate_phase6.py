@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Phase 6 evaluation on real Canadian bank transactions.
+"""phase 6 eval on real canadian bank transactions.
 
-Uses codex_labeled.csv as TEST-ONLY ground truth. Never trains on this data.
-Evaluates: baseline MiniLM, augmented MiniLM, CANINE, or all three.
+uses codex_labeled.csv as held-out labels.
+runs the baseline minilm, augmented minilm, canine, or all three.
 """
 
 import argparse
@@ -16,14 +16,34 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import pandas as pd
 
 from transaction_classifier.config import settings
+from transaction_classifier.knowledge.merchant_kb import MerchantKnowledgeBase
 from transaction_classifier.models.ensemble import Ensemble
 from transaction_classifier.models.finetune_model import FineTuneModel
 from transaction_classifier.rules.engine import RulesEngine
 
 
+def _load_knowledge_base() -> MerchantKnowledgeBase | None:
+    """load the merchant knowledge base if it exists."""
+    store_path = None
+    if settings.knowledge_store_path.exists():
+        store_path = settings.knowledge_store_path
+    elif settings.knowledge_base_path.exists():
+        store_path = settings.knowledge_base_path
+
+    if store_path is None:
+        print("  Knowledge base not found, skipping KB integration.")
+        return None
+
+    kb = MerchantKnowledgeBase()
+    kb.load(store_path)
+    print(f"  Knowledge base loaded: {kb.size} entries (chroma={kb.chroma_ready})")
+    return kb
+
+
 def load_ensemble(model_name: str) -> Ensemble:
-    """Load ensemble with the specified ML model."""
+    """load an ensemble for the requested model."""
     rules_engine = RulesEngine()
+    knowledge_base = _load_knowledge_base()
 
     if model_name == "baseline":
         model_path = settings.model_dir / "finetune"
@@ -32,7 +52,10 @@ def load_ensemble(model_name: str) -> Ensemble:
             sys.exit(1)
         ft_model = FineTuneModel()
         ft_model.load(model_path)
-        return Ensemble(rules_engine=rules_engine, finetune_model=ft_model)
+        return Ensemble(
+            rules_engine=rules_engine, finetune_model=ft_model,
+            knowledge_base=knowledge_base,
+        )
 
     elif model_name == "augmented":
         model_path = settings.model_dir / "finetune_augmented"
@@ -42,7 +65,10 @@ def load_ensemble(model_name: str) -> Ensemble:
             sys.exit(1)
         ft_model = FineTuneModel()
         ft_model.load(model_path)
-        return Ensemble(rules_engine=rules_engine, finetune_model=ft_model)
+        return Ensemble(
+            rules_engine=rules_engine, finetune_model=ft_model,
+            knowledge_base=knowledge_base,
+        )
 
     elif model_name == "canine":
         from transaction_classifier.models.canine_model import CanineModel
@@ -53,14 +79,17 @@ def load_ensemble(model_name: str) -> Ensemble:
             sys.exit(1)
         canine = CanineModel()
         canine.load(model_path)
-        return Ensemble(rules_engine=rules_engine, canine_model=canine)
+        return Ensemble(
+            rules_engine=rules_engine, canine_model=canine,
+            knowledge_base=knowledge_base,
+        )
 
     else:
         raise ValueError(f"Unknown model: {model_name}")
 
 
 def evaluate_model(model_name: str, ensemble: Ensemble, df: pd.DataFrame) -> dict:
-    """Run evaluation and return metrics dict."""
+    """run the eval and return the metrics."""
     raw_texts = df["raw_example"].tolist()
     true_labels = df["codex_category"].tolist()
 
@@ -85,7 +114,7 @@ def evaluate_model(model_name: str, ensemble: Ensemble, df: pd.DataFrame) -> dic
             source_counts[source]["correct"] += 1
 
     # ml-only accuracy; excludes direction and rules
-    ml_sources = {"finetune", "setfit", "fasttext", "sgd", "canine"}
+    ml_sources = {"finetune", "finetune_metadata", "setfit", "fasttext", "sgd", "canine"}
     ml_correct = sum(1 for p, t, s in zip(pred_labels, true_labels, sources)
                      if s in ml_sources and p == t)
     ml_total = sum(1 for s in sources if s in ml_sources)
@@ -122,7 +151,7 @@ def evaluate_model(model_name: str, ensemble: Ensemble, df: pd.DataFrame) -> dic
 
 
 def format_report(metrics: dict) -> str:
-    """Format a single model's metrics as a readable report."""
+    """format one model's metrics as a report."""
     lines = []
     m = metrics
     lines.append(f"=== {m['model_name'].upper()} ===")
@@ -145,7 +174,7 @@ def format_report(metrics: dict) -> str:
 
 
 def format_comparison(all_metrics: list[dict]) -> str:
-    """Format a comparison table across models."""
+    """format a comparison table across models."""
     lines = []
     lines.append("=" * 70)
     lines.append("PHASE 6 MODEL COMPARISON")

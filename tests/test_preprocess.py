@@ -1,4 +1,4 @@
-"""Tests for the text cleaning pipeline."""
+"""tests for the text cleaning pipeline."""
 
 import pytest
 
@@ -8,7 +8,7 @@ from transaction_classifier.data.preprocess import clean_transaction
 @pytest.mark.parametrize(
     "raw, expected",
     [
-        # bank prefix stripping
+        # strip bank prefixes
         ("POS PURCHASE - 1847 TIM HORTO OTTAWA ON", "TIM HORTO"),
         ("INTERAC PURCHASE-0423 COSTCO WHOLESALE NEPEAN ON", "COSTCO WHOLESALE"),
         ("PAY/PAIE EMPLOYER NAME", "EMPLOYER NAME"),
@@ -19,7 +19,7 @@ from transaction_classifier.data.preprocess import clean_transaction
         ("RECURRING PAYMENT GOODLIFE", "GOODLIFE"),
         ("MISC PAYMENT INSURANCE CO", "INSURANCE CO"),
 
-        # e-transfers -> directional markers
+        # turn e-transfers into direction markers
         ("INTERAC E-TRANSFER TO JOHN D", "E-TRANSFER-OUT"),
         ("INTERAC E-TRANSFER FROM JANE S", "E-TRANSFER-IN"),
         ("INTERAC E TRANSFER TO SOME PERSON", "E-TRANSFER-OUT"),
@@ -28,44 +28,44 @@ from transaction_classifier.data.preprocess import clean_transaction
         ("TFR-TO C/C SAVINGS", "TRANSFER C/C SAVINGS"),
         ("TFR-FR SAVINGS", "TRANSFER SAVINGS"),
 
-        # numeric noise removal
+        # remove numeric noise
         ("UBER *TRIP 284", "UBER TRIP"),
         ("AMAZON.CA*XXXXXXXXX AMAZON.CA ON", "AMAZON.CA AMAZON.CA"),
         ("TIM HORTONS #456 OTTAWA ON", "TIM HORTONS"),
         ("STARBUCKS 12345 TORONTO ON", "STARBUCKS"),
 
-        # location suffix stripping
+        # strip location suffixes
         ("LOBLAWS OTTAWA ON", "LOBLAWS"),
         ("SHOPPERS DRUG MART TORONTO ON", "SHOPPERS DRUG MART"),
         ("SOME STORE VANCOUVER BC", "SOME STORE"),
         ("MERCHANT NAME MONTREAL QC", "MERCHANT NAME"),
         ("STORE HALIFAX NS CA", "STORE"),
 
-        # new prefix patterns
+        # newer prefix patterns
         ("Contactless Interac purchase - 4471 HOT CRISPY CHIC", "HOT CRISPY CHIC"),
         ("Online Banking payment - 5824 UNI OTT TUITION", "UNI OTT TUITION"),
         ("ATM withdrawal - OI820090", "ATM-WITHDRAWAL"),
         ("ATM WITHDRAWAL - 1234", "ATM-WITHDRAWAL"),
         ("Mobile cheque deposit - 9842", "MOBILE-DEPOSIT"),
         ("MOBILE CHEQUE DEPOSIT - 5555", "MOBILE-DEPOSIT"),
-        # client card fee -> marker instead of empty
+        # map card replacement fees to a marker instead of empty text
         ("Client Card Replacement Fee", "CARD-REPLACEMENT-FEE"),
         ("CLIENT CARD REPLACEMENT FEE", "CARD-REPLACEMENT-FEE"),
         ("01339 MACS CONV. STORE KANATA ON", "MACS CONV. STORE"),
         # toast pos prefix
         ("TST-TAHINIS - 1940 EA OTTAWA ON", "TAHINIS - EA"),
 
-        # real rbc chequing patterns (pdf-extracted)
-        # "visadebitpurchase- 3076 amazon.caprime" (pdf joins words)
+        # real rbc chequing patterns from pdf extraction
+        # pdf can join words like "visadebitpurchase- 3076 amazon.caprime"
         ("VisaDebitpurchase- 3076 Amazon.caPrime", "AMAZON.CAPRIME"),
         ("Visa Debit purchase - 4232 Amazon Web Serv", "AMAZON WEB SERV"),
-        # "miscpayment goodlifeclubs"
+        # pdf can also join "miscpayment goodlifeclubs"
         ("MiscPayment GOODLIFECLUBS", "GOODLIFECLUBS"),
         ("Misc Payment RBC CREDIT CARD", "RBC CREDIT CARD"),
-        # "payrolldeposit ericssoncanada"
+        # same for "payrolldeposit ericssoncanada"
         ("PayrollDeposit EricssonCanada", "ERICSSONCANADA"),
         ("Payroll Deposit Ericsson Canada", "ERICSSON CANADA"),
-        # e-transfers (rbc chequing format) with direction
+        # rbc chequing e-transfers with direction
         ("e-Transfer- Autodeposit ALP MERT TATAR C1ADReTVQJhM", "E-TRANSFER-IN"),
         ("e-Transfersent gulreena UG49BT", "E-TRANSFER-OUT"),
         ("e-Transfer sent gulreena UG49BT", "E-TRANSFER-OUT"),
@@ -82,7 +82,7 @@ from transaction_classifier.data.preprocess import clean_transaction
         ("FRESHCO #9620 NEPEAN ON", "FRESHCO"),
         ("SQ *CHAIGUYS NEPEAN ON", "CHAIGUYS"),
         ("*RFBT-RIDEAU CENTRE OTTAWA ON", "RIDEAU CENTRE"),
-        # amazon marketplace -> readable name instead of empty/partial
+        # map amazon marketplace variants to a readable name
         ("AMZN MKTP CA*Z10WY2A31 WWW.AMAZON.CAON", "AMAZON MARKETPLACE"),
         ("AMZN MKTP CA*DU47K07V3", "AMAZON MARKETPLACE"),
         ("Amzn Mktp CA*abc123", "AMAZON MARKETPLACE"),
@@ -90,7 +90,13 @@ from transaction_classifier.data.preprocess import clean_transaction
         ("MARY BROWNS CHICKEN KANATA ON", "MARY BROWNS CHICKEN"),
         ("CANADA COMPUTERS #30 KANATA ON", "CANADA COMPUTERS"),
 
-        # clean passthrough (already clean merchant names from dataset)
+        # strip refund prefixes so the merchant can still go through kb/ml
+        ("REFUND - ZARA BAYSHORE OTTAWA ON", "ZARA BAYSHORE"),
+        ("CONTACTLESS INTERAC REFUND- UNDER ARMOUR OUTLET 14 HALTON HILLS ON", "UNDER ARMOUR OUTLET 14 HALTON"),
+        ("CONTACTLESS INTERAC REFUND- GAP CA", "GAP CA"),
+        ("REFUND", "REFUND"),
+
+        # already-clean merchant names
         ("Tim Hortons", "TIM HORTONS"),
         ("Starbucks Coffee", "STARBUCKS COFFEE"),
         ("McDonald's", "MCDONALD'S"),

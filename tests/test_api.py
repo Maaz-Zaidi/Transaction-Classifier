@@ -1,4 +1,4 @@
-"""Tests for the FastAPI endpoints."""
+"""tests for the fastapi endpoints."""
 
 import pytest
 
@@ -10,7 +10,7 @@ from transaction_classifier.rules.engine import RulesEngine
 
 
 def _make_ensemble() -> Ensemble:
-    """Create a minimal trained ensemble for testing."""
+    """build a small trained ensemble for tests."""
     rules_engine = RulesEngine()
     sgd = SGDModel()
     texts = [
@@ -43,7 +43,7 @@ def _make_ensemble() -> Ensemble:
 
 @pytest.fixture
 def api_ready():
-    """Seed the module-level ensemble used by the route handlers."""
+    """set the module-level ensemble used by the route handlers."""
     ensemble = _make_ensemble()
     set_ensemble(ensemble)
     return ensemble
@@ -88,10 +88,10 @@ def test_classify_empty_batch(api_ready):
     assert len(response.results) == 0
 
 
-def test_classify_known_merchant_uses_rules(api_ready):
+def test_classify_structural_pattern_uses_rules(api_ready):
     response = classify(
-        ClassifyRequest(transactions=[TransactionInput(description="TIM HORTONS")])
+        ClassifyRequest(transactions=[TransactionInput(description="PARKING LOT")])
     )
     result = response.results[0]
     assert result.source == "rules"
-    assert result.category == "Food & Dining"
+    assert result.category == "Transportation"

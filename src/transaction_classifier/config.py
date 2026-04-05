@@ -42,6 +42,8 @@ class Settings(BaseSettings):
     bert_confidence_threshold: float = 0.60
     use_bert: bool = False
 
+    token_analysis_enabled: bool = True
+
     batch_size: int = 256
 
     model_config = {"env_prefix": "TC_", "env_file": ".env", "extra": "ignore"}

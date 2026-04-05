@@ -1,461 +1,16 @@
 # transaction classification rules
-# applied to cleaned (preprocessed) transaction strings
-# types: contains (substring match), regex, exact
-# higher priority = checked first
+# these run on cleaned transaction strings
+# rule types: contains, regex, exact
+# higher priority runs first
+#
+# rules only handle transaction structure
+# merchant names should go through the kb or model
 
 rules:
-  # food & dining
-  # fast food / restaurants
-  - pattern: "TIM HORT"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "MCDONALD"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "STARBUCKS"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "SUBWAY"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "WENDY"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "BURGER KING"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "A&W"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "PIZZA PIZZA"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "DOMINO"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "POPEYE"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "MARY BROWN"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "SWISS CHALET"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "HARVEY"
-    category: "Food & Dining"
-    type: contains
-    priority: 90
-
-  - pattern: "CHIPOTLE"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  # delivery apps
-  - pattern: "(SKIP\\s*THE\\s*DISH|SKIPTHEDISH)"
-    category: "Food & Dining"
-    type: regex
-    priority: 100
-
-  - pattern: "UBER\\s*EAT"
-    category: "Food & Dining"
-    type: regex
-    priority: 110
-
-  - pattern: "DOORDASH"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  # groceries (mapped to food & dining in this schema)
-  - pattern: "LOBLAWS"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "COSTCO"
-    category: "Food & Dining"
-    type: contains
-    priority: 90
-
-  - pattern: "WALMART"
-    category: "Food & Dining"
-    type: contains
-    priority: 80
-
-  - pattern: "FRESHCO"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "FOOD BASICS"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "NO FRILLS"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "METRO"
-    category: "Food & Dining"
-    type: contains
-    priority: 80
-
-  - pattern: "SOBEYS"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "FARM BOY"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "T&T SUPERMARKET"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  - pattern: "WHOLE FOODS"
-    category: "Food & Dining"
-    type: contains
-    priority: 100
-
-  # transportation
-  - pattern: "OC TRANSPO"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "PRESTO"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "PETRO.?CANADA"
-    category: "Transportation"
-    type: regex
-    priority: 100
-
-  - pattern: "SHELL"
-    category: "Transportation"
-    type: contains
-    priority: 90
-
-  - pattern: "ESSO"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "PIONEER"
-    category: "Transportation"
-    type: contains
-    priority: 80
-
-  - pattern: "CANADIAN TIRE GAS"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "ULTRAMAR"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "^UBER(?!\\s*EAT)"
-    category: "Transportation"
-    type: regex
-    priority: 100
-
-  - pattern: "LYFT"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "PARKING"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "PPL\\b"
-    category: "Transportation"
-    type: regex
-    priority: 90
-
-  - pattern: "IMPARK"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "VIA RAIL"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "GO TRANSIT"
-    category: "Transportation"
-    type: contains
-    priority: 100
-
-  - pattern: "TTC"
-    category: "Transportation"
-    type: contains
-    priority: 90
-
-  # shopping & retail
-  - pattern: "AMAZON"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 70
-
-  - pattern: "CANADIAN TIRE"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 90
-
-  - pattern: "WINNERS"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "HOMESENSE"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "MARSHALLS"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "IKEA"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "HOME DEPOT"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "BEST BUY"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "INDIGO"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 90
-
-  - pattern: "SPORT\\s*CHEK"
-    category: "Shopping & Retail"
-    type: regex
-    priority: 100
-
-  - pattern: "OLD NAVY"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "H&M"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "DOLLARAMA"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  - pattern: "APPLE STORE"
-    category: "Shopping & Retail"
-    type: contains
-    priority: 100
-
-  # entertainment & recreation
-  - pattern: "NETFLIX"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "SPOTIFY"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "DISNEY"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "CINEPLEX"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "LANDMARK CINEMA"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "STEAM"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 90
-
-  - pattern: "PLAYSTATION"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "XBOX"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "NINTENDO"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "GOODLIFE"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 100
-
-  - pattern: "GYM"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 80
-
-  - pattern: "FITNESS"
-    category: "Entertainment & Recreation"
-    type: contains
-    priority: 80
-
-  # healthcare & medical
-  - pattern: "SHOPPERS DRUG"
-    category: "Healthcare & Medical"
-    type: contains
-    priority: 100
-
-  - pattern: "PHARMAPRIX"
-    category: "Healthcare & Medical"
-    type: contains
-    priority: 100
-
-  - pattern: "REXALL"
-    category: "Healthcare & Medical"
-    type: contains
-    priority: 100
-
-  - pattern: "PHARMACY"
-    category: "Healthcare & Medical"
-    type: contains
-    priority: 100
-
-  - pattern: "DENTAL"
-    category: "Healthcare & Medical"
-    type: contains
-    priority: 100
-
-  - pattern: "OPTOM"
-    category: "Healthcare & Medical"
-    type: contains
-    priority: 100
-
-  - pattern: "CLINIC"
-    category: "Healthcare & Medical"
-    type: contains
-    priority: 80
-
-  - pattern: "HOSPITAL"
-    category: "Healthcare & Medical"
-    type: contains
-    priority: 100
-
-  # utilities & services
-  - pattern: "ROGERS"
-    category: "Utilities & Services"
-    type: contains
-    priority: 90
-
-  - pattern: "BELL\\b"
-    category: "Utilities & Services"
-    type: regex
-    priority: 80
-
-  - pattern: "TELUS"
-    category: "Utilities & Services"
-    type: contains
-    priority: 100
-
-  - pattern: "FIDO"
-    category: "Utilities & Services"
-    type: contains
-    priority: 100
-
-  - pattern: "KOODO"
-    category: "Utilities & Services"
-    type: contains
-    priority: 100
-
-  - pattern: "VIRGIN\\s*(MOBILE|PLUS)"
-    category: "Utilities & Services"
-    type: regex
-    priority: 100
-
-  - pattern: "HYDRO"
-    category: "Utilities & Services"
-    type: contains
-    priority: 100
-
-  - pattern: "ENBRIDGE"
-    category: "Utilities & Services"
-    type: contains
-    priority: 100
-
-  - pattern: "ALECTRA"
-    category: "Utilities & Services"
-    type: contains
-    priority: 100
-
   # financial services
+
   - pattern: "E-TRANSFER-OUT"
     category: "Financial Services"
-    type: contains
-    priority: 200
-
-  - pattern: "E-TRANSFER-IN"
-    category: "Income"
     type: contains
     priority: 200
 
@@ -500,6 +55,12 @@ rules:
     priority: 100
 
   # income
+
+  - pattern: "E-TRANSFER-IN"
+    category: "Income"
+    type: contains
+    priority: 200
+
   - pattern: "PAYROLL"
     category: "Income"
     type: contains
@@ -525,7 +86,8 @@ rules:
     type: regex
     priority: 90
 
-  # government & legal
+  # government and legal
+
   - pattern: "CRA\\b"
     category: "Government & Legal"
     type: regex
@@ -554,4 +116,49 @@ rules:
   - pattern: "TAX\\b"
     category: "Government & Legal"
     type: regex
+    priority: 80
+
+  # generic service words, not merchant brands
+
+  # transportation
+  - pattern: "PARKING"
+    category: "Transportation"
+    type: contains
+    priority: 100
+
+  # healthcare and medical
+  - pattern: "PHARMACY"
+    category: "Healthcare & Medical"
+    type: contains
+    priority: 100
+
+  - pattern: "DENTAL"
+    category: "Healthcare & Medical"
+    type: contains
+    priority: 100
+
+  - pattern: "HOSPITAL"
+    category: "Healthcare & Medical"
+    type: contains
+    priority: 100
+
+  - pattern: "CLINIC"
+    category: "Healthcare & Medical"
+    type: contains
+    priority: 80
+
+  - pattern: "OPTOM"
+    category: "Healthcare & Medical"
+    type: contains
+    priority: 100
+
+  # entertainment and recreation
+  - pattern: "GYM"
+    category: "Entertainment & Recreation"
+    type: contains
+    priority: 80
+
+  - pattern: "FITNESS"
+    category: "Entertainment & Recreation"
+    type: contains
     priority: 80

@@ -66,10 +66,10 @@ def test_classify_batch_returns_correct_length(ensemble):
     assert len(results) == 3
 
 
-def test_known_merchant_uses_rules(ensemble):
-    results = ensemble.classify_batch(["TIM HORTONS"])
+def test_structural_pattern_uses_rules(ensemble):
+    results = ensemble.classify_batch(["PARKING LOT DOWNTOWN"])
     assert results[0].source == "rules"
-    assert results[0].category == "Food & Dining"
+    assert results[0].category == "Transportation"
     assert results[0].confidence == pytest.approx(0.98)
     assert results[0].flagged_for_review is False
 
@@ -80,14 +80,14 @@ def test_unknown_merchant_uses_sgd(ensemble):
 
 
 def test_classify_single(ensemble):
-    result = ensemble.classify_single("NETFLIX.COM")
+    result = ensemble.classify_single("NSF FEE")
     assert isinstance(result, ClassificationResult)
     assert result.category is not None
 
 
 def test_results_have_all_fields(ensemble):
-    result = ensemble.classify_single("STARBUCKS COFFEE")
-    assert result.transaction == "STARBUCKS COFFEE"
+    result = ensemble.classify_single("DENTAL CLINIC")
+    assert result.transaction == "DENTAL CLINIC"
     assert result.cleaned  # should not be empty
     assert result.category
     assert result.confidence > 0

@@ -15,6 +15,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from transaction_classifier.config import settings
 from transaction_classifier.data.preprocess import clean_transaction
 from transaction_classifier.knowledge.retrieval import MerchantDenseEmbedder, MerchantReranker
+from transaction_classifier.knowledge.token_analyzer import DecomposedQuery, TokenAnalyzer
 
 try:
     import chromadb
@@ -81,16 +82,23 @@ def build_retrieval_document(entry: KnowledgeEntry) -> str:
     return ". ".join(part for part in parts if part)
 
 
-def build_enriched_transaction_text(cleaned_text: str, match: KnowledgeMatch) -> str:
-    """build a short text with kb metadata for the classifier."""
+def build_enriched_transaction_text(
+    cleaned_text: str,
+    match: KnowledgeMatch | None,
+    descriptor_context: str = "",
+) -> str:
+    """build a short text with kb metadata and descriptor context for the classifier."""
     parts = [cleaned_text]
-    display_name = match.entry.display_name or match.entry.canonical_name
-    if display_name and display_name != cleaned_text:
-        parts.append(f"merchant identity: {display_name}")
-    if match.entry.metadata_text:
-        parts.append(f"external metadata: {match.entry.metadata_text}")
-    if match.entry.raw_category_labels:
-        parts.append("place types: " + "; ".join(match.entry.raw_category_labels[:3]))
+    if match is not None:
+        display_name = match.entry.display_name or match.entry.canonical_name
+        if display_name and display_name != cleaned_text:
+            parts.append(f"merchant identity: {display_name}")
+        if match.entry.metadata_text:
+            parts.append(f"external metadata: {match.entry.metadata_text}")
+        if match.entry.raw_category_labels:
+            parts.append("place types: " + "; ".join(match.entry.raw_category_labels[:3]))
+    if descriptor_context:
+        parts.append(f"descriptor context: {descriptor_context}")
     return ". ".join(parts)
 
 
@@ -580,6 +588,168 @@ class MerchantKnowledgeBase:
             else None,
             fused_score=float(bucket["fused_score"]),
         )
+
+    @staticmethod
+    def _fts_query_from_decomposed(decomposed: DecomposedQuery) -> str | None:
+        """build an fts query from the useful decomposed tokens."""
+        tokens: list[str] = []
+        for token in decomposed.brand_tokens:
+            cleaned = re.sub(r"[^A-Z0-9]", "", token.upper())
+            if len(cleaned) >= 2:
+                tokens.append(f'"{cleaned}"')
+        for token in decomposed.descriptor_tokens:
+            cleaned = re.sub(r"[^A-Z0-9]", "", token.upper())
+            if len(cleaned) >= 2:
+                tokens.append(f'"{cleaned}"')
+        if not tokens:
+            return None
+        return " OR ".join(tokens[:8])
+
+    def search_with_tokens(
+        self,
+        cleaned_text: str,
+        token_analyzer: TokenAnalyzer | None = None,
+        min_similarity: float = 0.58,
+    ) -> tuple[KnowledgeMatch | None, DecomposedQuery | None]:
+        """search with token splitting for better retrieval and enrichment."""
+        if not self._loaded:
+            return None, None
+
+        # split the query into typed tokens
+        decomposed: DecomposedQuery | None = None
+        if token_analyzer is not None:
+            decomposed = token_analyzer.analyze(cleaned_text, self)
+
+        query = normalize_merchant_name(cleaned_text)
+        if len(query) < 3:
+            return None, decomposed
+
+        # first try an exact alias match on the full cleaned text
+        exact_entry_ids = self._lookup_exact_candidate_ids(query)
+        if len(exact_entry_ids) == 1:
+            entry = self._get_entry(exact_entry_ids[0])
+            return KnowledgeMatch(
+                entry=entry,
+                matched_alias=query,
+                similarity=1.0,
+                strategy="exact",
+                dense_score=1.0,
+                lexical_score=1.0,
+                fused_score=1.0,
+                rerank_score=1.0,
+            ), decomposed
+
+        # then try an exact alias match on the brand-only query
+        brand_query = decomposed.brand_query if decomposed else query
+        brand_exact_ids: list[str] = []
+        if brand_query and brand_query != query:
+            brand_normalized = normalize_merchant_name(brand_query)
+            if len(brand_normalized) >= 3:
+                brand_exact_ids = self._lookup_exact_candidate_ids(brand_normalized)
+                if len(brand_exact_ids) == 1:
+                    entry = self._get_entry(brand_exact_ids[0])
+                    return KnowledgeMatch(
+                        entry=entry,
+                        matched_alias=brand_normalized,
+                        similarity=1.0,
+                        strategy="exact",
+                        dense_score=1.0,
+                        lexical_score=1.0,
+                        fused_score=1.0,
+                        rerank_score=1.0,
+                    ), decomposed
+
+        # then run lexical and dense retrieval
+        # if we have a decomposed fts query, use that first
+        if decomposed is not None:
+            fts_query_str = self._fts_query_from_decomposed(decomposed)
+            if fts_query_str and self._sqlite_conn is not None and self._sqlite_fts_ready:
+                try:
+                    rows = self._sqlite_conn.execute(
+                        """
+                        SELECT entry_id, bm25(merchant_fts) AS rank
+                        FROM merchant_fts
+                        WHERE merchant_fts MATCH ?
+                        ORDER BY rank
+                        LIMIT ?
+                        """,
+                        (fts_query_str, settings.knowledge_lexical_candidates),
+                    ).fetchall()
+                    lexical_results = [
+                        (str(row["entry_id"]), 1.0 / (rank + 1))
+                        for rank, row in enumerate(rows)
+                    ]
+                except Exception:
+                    lexical_results = self._lexical_search(query, settings.knowledge_lexical_candidates)
+            else:
+                lexical_results = self._lexical_search(query, settings.knowledge_lexical_candidates)
+        else:
+            lexical_results = self._lexical_search(query, settings.knowledge_lexical_candidates)
+
+        # use the brand query for dense search when we have one
+        dense_query = brand_query if brand_query and len(brand_query) >= 3 else query
+        dense_results = self._dense_search(dense_query, settings.knowledge_dense_candidates)
+
+        seed_ids = list(set(exact_entry_ids + brand_exact_ids))
+        candidate_map = self._fuse_candidates(
+            lexical_results,
+            dense_results,
+            seed_entry_ids=seed_ids,
+        )
+
+        if not candidate_map:
+            return None, decomposed
+
+        ranked_candidates = sorted(
+            candidate_map.items(),
+            key=lambda item: float(item[1]["fused_score"]),
+            reverse=True,
+        )
+        rerank_ids = [
+            entry_id for entry_id, _ in ranked_candidates[: settings.knowledge_rerank_candidates]
+        ]
+
+        best_entry_id, rerank_scores = self._rerank(query, rerank_ids)
+        if best_entry_id is not None:
+            best_score = float(rerank_scores[rerank_ids.index(best_entry_id)])
+            if best_score >= min_similarity:
+                bucket = candidate_map[best_entry_id]
+                entry = self._get_entry(best_entry_id)
+                return KnowledgeMatch(
+                    entry=entry,
+                    matched_alias=query if best_entry_id in seed_ids else entry.canonical_name,
+                    similarity=best_score,
+                    strategy="rerank",
+                    dense_score=float(bucket["dense_score"])
+                    if bucket["dense_score"] is not None
+                    else None,
+                    lexical_score=float(bucket["lexical_score"])
+                    if bucket["lexical_score"] is not None
+                    else None,
+                    fused_score=float(bucket["fused_score"]),
+                    rerank_score=best_score,
+                ), decomposed
+
+        best_entry_id, bucket = ranked_candidates[0]
+        best_score = max(
+            float(bucket["dense_score"]) if bucket["dense_score"] is not None else 0.0,
+            float(bucket["lexical_score"]) if bucket["lexical_score"] is not None else 0.0,
+        )
+        if best_score < min_similarity:
+            return None, decomposed
+
+        entry = self._get_entry(best_entry_id)
+        return KnowledgeMatch(
+            entry=entry,
+            matched_alias=query if best_entry_id in seed_ids else entry.canonical_name,
+            similarity=best_score,
+            strategy="dense_lexical",
+            dense_score=float(bucket["dense_score"]) if bucket["dense_score"] is not None else None,
+            lexical_score=float(bucket["lexical_score"])
+            if bucket["lexical_score"] is not None
+            else None,
+            fused_score=float(bucket["fused_score"]),
+        ), decomposed
 
     @property
     def is_loaded(self) -> bool:

@@ -1,4 +1,4 @@
-"""Tests for the rules engine."""
+"""tests for the rules engine."""
 
 import pytest
 
@@ -13,42 +13,41 @@ def engine():
 @pytest.mark.parametrize(
     "cleaned_text, expected_category",
     [
-        ("TIM HORTONS", "Food & Dining"),
-        ("TIM HORTO", "Food & Dining"),
-        ("MCDONALD'S", "Food & Dining"),
-        ("STARBUCKS COFFEE", "Food & Dining"),
-        ("UBER EATS", "Food & Dining"),
-        ("SKIP THE DISHES", "Food & Dining"),
-        ("DOORDASH", "Food & Dining"),
-        ("LOBLAWS", "Food & Dining"),
-        ("COSTCO", "Food & Dining"),
-        ("FRESHCO", "Food & Dining"),
-        ("OC TRANSPO", "Transportation"),
-        ("PRESTO", "Transportation"),
-        ("PETRO-CANADA", "Transportation"),
-        ("UBER TRIP", "Transportation"),
-        ("PARKING LOT", "Transportation"),
-        ("AMAZON.CA", "Shopping & Retail"),
-        ("CANADIAN TIRE STORE", "Shopping & Retail"),
-        ("IKEA", "Shopping & Retail"),
-        ("HOME DEPOT", "Shopping & Retail"),
-        ("NETFLIX.COM", "Entertainment & Recreation"),
-        ("SPOTIFY", "Entertainment & Recreation"),
-        ("CINEPLEX", "Entertainment & Recreation"),
-        ("SHOPPERS DRUG MART", "Healthcare & Medical"),
-        ("REXALL PHARMACY", "Healthcare & Medical"),
-        ("ROGERS WIRELESS", "Utilities & Services"),
-        ("FIDO MOBILE", "Utilities & Services"),
-        ("HYDRO OTTAWA", "Utilities & Services"),
+        # financial services structural patterns
         ("E-TRANSFER-OUT", "Financial Services"),
-        ("E-TRANSFER-IN", "Income"),
+        ("TRANSFER TO SAVINGS", "Financial Services"),
         ("MORTGAGE PAYMENT", "Financial Services"),
+        ("LOAN PAYMENT", "Financial Services"),
+        ("CREDIT CARD PAYMENT", "Financial Services"),
+        ("NSF FEE", "Financial Services"),
+        ("OVERDRAFT", "Financial Services"),
+        ("SERVICE CHARGE", "Financial Services"),
+        ("MONTHLY FEE", "Financial Services"),
+        # income structural patterns
+        ("E-TRANSFER-IN", "Income"),
         ("PAYROLL", "Income"),
+        ("SALARY", "Income"),
+        ("DEPOSIT", "Income"),
+        ("REFUND", "Income"),
+        ("CASH BACK", "Income"),
+        # government and legal agency patterns
         ("CANADA REVENUE", "Government & Legal"),
         ("SERVICE ONTARIO", "Government & Legal"),
+        ("SERVICE CANADA", "Government & Legal"),
+        ("CRA PAYMENT", "Government & Legal"),
+        ("TAX PAYMENT", "Government & Legal"),
+        # generic service descriptors
+        ("PARKING LOT", "Transportation"),
+        ("PHARMACY", "Healthcare & Medical"),
+        ("DENTAL OFFICE", "Healthcare & Medical"),
+        ("HOSPITAL", "Healthcare & Medical"),
+        ("CLINIC", "Healthcare & Medical"),
+        ("OPTOMETRY", "Healthcare & Medical"),
+        ("GYM", "Entertainment & Recreation"),
+        ("FITNESS CENTRE", "Entertainment & Recreation"),
     ],
 )
-def test_known_merchants(engine, cleaned_text, expected_category):
+def test_structural_rules(engine, cleaned_text, expected_category):
     match = engine.match(cleaned_text)
     assert match is not None, f"No rule matched for {cleaned_text!r}"
     assert match.category == expected_category, (
@@ -61,24 +60,44 @@ def test_no_match_returns_none(engine):
     assert result is None
 
 
+def test_merchant_names_are_not_ruled(engine):
+    """merchant-name rules are gone, so brands should go through kb/ml."""
+    merchant_names = [
+        "TIM HORTONS",
+        "MCDONALD'S",
+        "COSTCO",
+        "AMAZON",
+        "WALMART",
+        "NETFLIX",
+        "SPOTIFY",
+        "CANADIAN TIRE",
+        "UBER",
+        "UBER EATS",
+        "LOBLAWS",
+        "SHELL",
+        "ROGERS",
+        "BELL CANADA",
+    ]
+    for name in merchant_names:
+        result = engine.match(name)
+        assert result is None, (
+            f"Merchant {name!r} should NOT be handled by rules, "
+            f"but matched rule {result.rule_pattern!r} -> {result.category}"
+        )
+
+
 def test_match_confidence(engine):
-    match = engine.match("TIM HORTONS")
+    match = engine.match("MORTGAGE PAYMENT")
     assert match is not None
     assert match.confidence == pytest.approx(0.98)
 
 
-def test_uber_eats_vs_uber_trip(engine):
-    """UBER EATS should be Food, UBER (ride) should be Transportation."""
-    eats = engine.match("UBER EATS")
-    ride = engine.match("UBER TRIP")
-    assert eats.category == "Food & Dining"
-    assert ride.category == "Transportation"
-
-
 def test_match_batch(engine):
-    texts = ["TIM HORTONS", "UNKNOWN", "NETFLIX"]
+    texts = ["MORTGAGE PAYMENT", "UNKNOWN MERCHANT", "PARKING LOT"]
     results = engine.match_batch(texts)
     assert len(results) == 3
     assert results[0] is not None
+    assert results[0].category == "Financial Services"
     assert results[1] is None
     assert results[2] is not None
+    assert results[2].category == "Transportation"

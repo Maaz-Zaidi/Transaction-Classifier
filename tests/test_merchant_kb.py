@@ -207,3 +207,131 @@ def test_search_sqlite_store_uses_fts_and_rerank(tmp_path):
     assert match.entry.canonical_name == "GOODLIFE FITNESS"
     assert match.strategy == "rerank"
     assert match.similarity == 0.91
+
+
+def test_search_with_tokens_exact_match(tmp_path):
+    from transaction_classifier.knowledge.token_analyzer import TokenAnalyzer
+
+    kb_path = tmp_path / "merchant_kb.json"
+    with open(kb_path, "w") as f:
+        json.dump(
+            [
+                {
+                    "canonical_name": "COSTCO",
+                    "aliases": ["COSTCO", "COSTCO WHOLESALE"],
+                    "mapped_category": "Shopping & Retail",
+                    "mapping_confidence": 0.92,
+                    "metadata_text": "warehouse retailer",
+                    "source": "curated_public",
+                }
+            ],
+            f,
+        )
+
+    kb = MerchantKnowledgeBase(
+        kb_path,
+        dense_embedder=DummyDenseEmbedder(),
+        reranker=DummyReranker([0.95]),
+    )
+    analyzer = TokenAnalyzer()
+    match, decomposed = kb.search_with_tokens("COSTCO", token_analyzer=analyzer)
+
+    assert match is not None
+    assert match.entry.mapped_category == "Shopping & Retail"
+    assert match.similarity == 1.0
+    assert decomposed is not None
+
+
+def test_search_with_tokens_returns_decomposed(tmp_path):
+    from transaction_classifier.knowledge.token_analyzer import TokenAnalyzer
+
+    kb_path = tmp_path / "merchant_kb.json"
+    with open(kb_path, "w") as f:
+        json.dump(
+            [
+                {
+                    "canonical_name": "COSTCO",
+                    "aliases": ["COSTCO"],
+                    "mapped_category": "Shopping & Retail",
+                    "mapping_confidence": 0.92,
+                    "metadata_text": "warehouse retailer",
+                    "source": "curated_public",
+                }
+            ],
+            f,
+        )
+
+    kb = MerchantKnowledgeBase(
+        kb_path,
+        dense_embedder=DummyDenseEmbedder(),
+        reranker=DummyReranker([0.95]),
+    )
+    analyzer = TokenAnalyzer()
+    match, decomposed = kb.search_with_tokens(
+        "COSTCO GAS W1263", token_analyzer=analyzer,
+    )
+
+    assert decomposed is not None
+    assert "COSTCO" in decomposed.brand_tokens
+    assert "GAS" in decomposed.descriptor_tokens
+    assert "W1263" in decomposed.noise_tokens
+    assert "gas station" in decomposed.descriptor_context
+
+
+def test_search_with_tokens_no_analyzer(tmp_path):
+    kb_path = tmp_path / "merchant_kb.json"
+    with open(kb_path, "w") as f:
+        json.dump(
+            [
+                {
+                    "canonical_name": "COSTCO",
+                    "aliases": ["COSTCO"],
+                    "mapped_category": "Shopping & Retail",
+                    "mapping_confidence": 0.92,
+                    "metadata_text": "warehouse retailer",
+                    "source": "curated_public",
+                }
+            ],
+            f,
+        )
+
+    kb = MerchantKnowledgeBase(
+        kb_path,
+        dense_embedder=DummyDenseEmbedder(),
+        reranker=DummyReranker([0.95]),
+    )
+    match, decomposed = kb.search_with_tokens("COSTCO", token_analyzer=None)
+
+    assert match is not None
+    assert decomposed is None
+
+
+def test_build_enriched_text_with_descriptor_context(tmp_path):
+    from transaction_classifier.knowledge.merchant_kb import KnowledgeMatch, KnowledgeEntry
+
+    entry = KnowledgeEntry(
+        entry_id="test:1",
+        canonical_name="COSTCO",
+        aliases=["COSTCO"],
+        mapped_category="Shopping & Retail",
+        mapping_confidence=0.92,
+        metadata_text="warehouse retailer",
+        source="curated_public",
+    )
+    match = KnowledgeMatch(entry=entry, matched_alias="COSTCO", similarity=1.0)
+    enriched = build_enriched_transaction_text(
+        "COSTCO GAS", match, descriptor_context="gas station, fuel",
+    )
+
+    assert "warehouse retailer" in enriched
+    assert "descriptor context: gas station, fuel" in enriched
+
+
+def test_build_enriched_text_descriptor_only_no_match():
+    enriched = build_enriched_transaction_text(
+        "UNKNOWN GAS", match=None, descriptor_context="gas station, fuel",
+    )
+
+    assert "UNKNOWN GAS" in enriched
+    assert "descriptor context: gas station, fuel" in enriched
+    assert "merchant identity" not in enriched
