@@ -1,11 +1,10 @@
 #!/usr/bin/env python
-"""Build an external merchant KB from public metadata sources.
+"""build a merchant kb from public place data.
 
-Primary source: Foursquare OS Places (Canada subset), when available.
-Fallback seed: curated public merchant metadata bundled with the repo.
+it uses foursquare canada data when available.
+if that is missing, it falls back to the curated merchant list in the repo.
 
-The builder uses unlabeled merchant strings extracted from the user's raw
-transaction corpus as candidate names. It does not use test labels.
+candidate names come from unlabeled transaction strings, not test labels.
 """
 
 from __future__ import annotations
@@ -51,6 +50,25 @@ def _load_candidate_names(path: Path, column: str | None) -> set[str]:
     return {name for name in names if len(name) >= 3}
 
 
+def _alias_variants(*values: str) -> list[str]:
+    aliases: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        normalized = clean_transaction(str(value or ""))
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        aliases.append(normalized)
+
+        tokens = normalized.split()
+        if len(tokens) > 1:
+            shortened = " ".join(tokens[:-1]).strip()
+            if len(shortened) >= 3 and shortened not in seen:
+                seen.add(shortened)
+                aliases.append(shortened)
+    return aliases
+
+
 def _merge_entries(*entry_groups: list[dict]) -> list[dict]:
     merged: dict[str, dict] = {}
     for group in entry_groups:
@@ -61,6 +79,12 @@ def _merge_entries(*entry_groups: list[dict]) -> list[dict]:
                 for alias in raw.get("aliases", [])
                 if clean_transaction(alias)
             ]
+            stripped_aliases = [
+                clean_transaction(alias)
+                for alias in raw.get("stripped_aliases", [])
+                if clean_transaction(alias)
+            ]
+            raw_aliases = [str(alias).strip() for alias in raw.get("raw_aliases", []) if str(alias).strip()]
             if canonical_name and canonical_name not in aliases:
                 aliases.insert(0, canonical_name)
             if not aliases:
@@ -71,15 +95,28 @@ def _merge_entries(*entry_groups: list[dict]) -> list[dict]:
             if current is None:
                 merged[key] = {
                     "canonical_name": key,
+                    "display_name": str(raw.get("display_name", "") or "").strip() or None,
                     "aliases": aliases,
+                    "stripped_aliases": stripped_aliases,
+                    "raw_aliases": raw_aliases,
                     "mapped_category": raw.get("mapped_category"),
                     "mapping_confidence": float(raw.get("mapping_confidence", 0.0) or 0.0),
                     "metadata_text": str(raw.get("metadata_text", "") or "").strip(),
                     "source": raw.get("source", "external"),
+                    "raw_category_labels": list(raw.get("raw_category_labels", []) or []),
+                    "locality": raw.get("locality"),
+                    "region": raw.get("region"),
+                    "country": raw.get("country"),
                 }
                 continue
 
             current["aliases"] = sorted(set(current["aliases"]) | set(aliases))
+            current["stripped_aliases"] = sorted(
+                set(current.get("stripped_aliases", [])) | set(stripped_aliases)
+            )
+            current["raw_aliases"] = sorted(set(current.get("raw_aliases", [])) | set(raw_aliases))
+            if raw.get("display_name") and not current.get("display_name"):
+                current["display_name"] = str(raw["display_name"]).strip()
             if (
                 float(raw.get("mapping_confidence", 0.0) or 0.0)
                 > float(current.get("mapping_confidence", 0.0) or 0.0)
@@ -93,12 +130,18 @@ def _merge_entries(*entry_groups: list[dict]) -> list[dict]:
                     )
                 else:
                     current["metadata_text"] = str(raw["metadata_text"]).strip()
+            current["raw_category_labels"] = list(
+                dict.fromkeys(list(current.get("raw_category_labels", [])) + list(raw.get("raw_category_labels", []) or []))
+            )
+            for field in ("locality", "region", "country"):
+                if raw.get(field) and not current.get(field):
+                    current[field] = raw.get(field)
 
     return list(merged.values())
 
 
 def _build_foursquare_entries(
-    candidate_names: set[str],
+    candidate_names: set[str] | None,
     *,
     max_rows: int | None = None,
 ) -> list[dict]:
@@ -190,7 +233,7 @@ def _build_foursquare_entries(
             names, localities, regions, label_lists
         ):
             normalized = clean_transaction(str(raw_name or ""))
-            if normalized not in candidate_names:
+            if candidate_names is not None and normalized not in candidate_names:
                 continue
 
             matched += 1
@@ -237,11 +280,28 @@ def _build_foursquare_entries(
         entries.append(
             {
                 "canonical_name": normalized,
-                "aliases": [normalized],
+                "display_name": bucket["display_names"].most_common(1)[0][0]
+                if bucket["display_names"]
+                else None,
+                "aliases": _alias_variants(
+                    normalized,
+                    *[name for name, _ in bucket["display_names"].most_common(5)],
+                ),
+                "stripped_aliases": _alias_variants(
+                    *[
+                        " ".join(clean_transaction(name).split()[:-1])
+                        for name, _ in bucket["display_names"].most_common(5)
+                    ]
+                ),
+                "raw_aliases": [name for name, _ in bucket["display_names"].most_common(5)],
                 "mapped_category": mapped_category,
                 "mapping_confidence": mapping_confidence,
                 "metadata_text": build_metadata_text(labels, locality, region, "CA"),
                 "source": "foursquare",
+                "raw_category_labels": labels,
+                "locality": locality,
+                "region": region,
+                "country": "CA",
             }
         )
 
@@ -265,13 +325,18 @@ def main() -> None:
         type=Path,
         default=settings.knowledge_base_path,
     )
+    parser.add_argument("--full-canada", action="store_true")
     parser.add_argument("--skip-foursquare", action="store_true")
     parser.add_argument("--allow-curated-only", action="store_true")
     parser.add_argument("--max-foursquare-rows", type=int)
     args = parser.parse_args()
 
-    candidate_names = _load_candidate_names(args.candidate_csv, args.candidate_column)
-    print(f"Loaded {len(candidate_names)} unlabeled candidate merchant names.", flush=True)
+    candidate_names = None
+    if not args.full_canada:
+        candidate_names = _load_candidate_names(args.candidate_csv, args.candidate_column)
+        print(f"Loaded {len(candidate_names)} unlabeled candidate merchant names.", flush=True)
+    else:
+        print("Building full Canada merchant document set (no candidate prefilter).", flush=True)
 
     foursquare_entries: list[dict] = []
     if not args.skip_foursquare:

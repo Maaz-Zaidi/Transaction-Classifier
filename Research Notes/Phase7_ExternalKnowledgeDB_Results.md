@@ -168,7 +168,6 @@ Examples confirmed in Foursquare:
 - `UNI OTT TUITION` -> `University of Ottawa`
 - `A & W KA` -> `A&W`
 - `GRILLADES POULET ROUGE` -> `Poulet Rouge`
-- `PAYPAL PATREON` -> `PayPal Canada`
 
 This is strong evidence that the current KB architecture is still missing reachable improvements.
 

@@ -1,4 +1,4 @@
-"""Tests for the ensemble orchestrator."""
+"""tests for the ensemble flow."""
 
 import json
 
@@ -10,10 +10,24 @@ from transaction_classifier.models.sgd_model import SGDModel
 from transaction_classifier.rules.engine import RulesEngine
 
 
+class DummyDenseEmbedder:
+    is_available = False
+
+
+class DummyReranker:
+    is_available = True
+
+    def __init__(self, scores):
+        self._scores = list(scores)
+
+    def score(self, query, documents):
+        return self._scores[: len(documents)]
+
+
 @pytest.fixture
 def ensemble():
     rules_engine = RulesEngine()
-    # train a minimal sgd model
+    # train a tiny sgd model for the test
     sgd = SGDModel()
     texts = [
         "TIM HORTONS", "STARBUCKS", "PIZZA",
@@ -74,7 +88,7 @@ def test_classify_single(ensemble):
 def test_results_have_all_fields(ensemble):
     result = ensemble.classify_single("STARBUCKS COFFEE")
     assert result.transaction == "STARBUCKS COFFEE"
-    assert result.cleaned  # not empty
+    assert result.cleaned  # should not be empty
     assert result.category
     assert result.confidence > 0
     assert result.source in (
@@ -108,7 +122,11 @@ def test_high_confidence_knowledge_base_hit_short_circuits_model(tmp_path):
             f,
         )
 
-    kb = MerchantKnowledgeBase(kb_path)
+    kb = MerchantKnowledgeBase(
+        kb_path,
+        dense_embedder=DummyDenseEmbedder(),
+        reranker=DummyReranker([0.96]),
+    )
     ensemble = Ensemble(
         rules_engine=RulesEngine(),
         knowledge_base=kb,
@@ -146,7 +164,11 @@ def test_metadata_enrichment_feeds_primary_model(tmp_path):
             return [("Government & Legal", 0.87) for _ in texts]
 
     model = RecordingModel()
-    kb = MerchantKnowledgeBase(kb_path)
+    kb = MerchantKnowledgeBase(
+        kb_path,
+        dense_embedder=DummyDenseEmbedder(),
+        reranker=DummyReranker([0.82]),
+    )
     ensemble = Ensemble(
         rules_engine=RulesEngine(),
         finetune_model=model,

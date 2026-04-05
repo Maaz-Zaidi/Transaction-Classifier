@@ -1,11 +1,11 @@
-"""API request/response models."""
+"""api request and response models."""
 
 from pydantic import BaseModel
 
 
 class TransactionInput(BaseModel):
     description: str
-    amount: float | None = None  # not used yet
+    amount: float | None = None  # unused for now
 
 
 class ClassifyRequest(BaseModel):
@@ -43,6 +43,7 @@ class HealthResponse(BaseModel):
     sgd_loaded: bool
     bert_loaded: bool
     knowledge_base_loaded: bool = False
+    knowledge_retrieval_ready: bool = False
     zeroshot_loaded: bool = False
     primary_model: str = "none"
     rules_count: int

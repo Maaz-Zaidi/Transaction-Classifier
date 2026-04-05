@@ -241,7 +241,7 @@ Some transactions are not really place merchants at all:
 - transfers
 - bank artifacts
 - card payments
-- digital merchants such as Amazon Prime, AWS, Steam, Hoyoverse, or Patreon
+- digital merchants such as Amazon Prime, AWS, Steam, or Hoyoverse
 
 Those still need one or more of:
 

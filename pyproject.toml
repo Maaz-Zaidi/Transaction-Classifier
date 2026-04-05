@@ -12,6 +12,7 @@ dependencies = [
     "pandas>=2.1",
     "pyarrow",
     "datasets",
+    "chromadb>=0.5",
     "fastapi>=0.110",
     "uvicorn[standard]",
     "pydantic>=2.0",
@@ -23,6 +24,7 @@ dependencies = [
 [project.optional-dependencies]
 bert = ["transformers>=4.38", "torch>=2.1", "accelerate"]
 dev = ["pytest", "httpx", "ruff"]
+retrieval = ["transformers>=4.38", "torch>=2.1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

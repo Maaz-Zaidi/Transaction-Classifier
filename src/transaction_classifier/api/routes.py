@@ -1,4 +1,4 @@
-"""FastAPI route definitions."""
+"""fastapi routes."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from transaction_classifier.models.ensemble import Ensemble
 
 router = APIRouter()
 
-# set by app.py at startup
+# app.py fills these in at startup
 _ensemble: Ensemble | None = None
 _model_version: str = "unknown"
 
@@ -73,6 +73,9 @@ def health():
     knowledge_base_loaded = bool(
         ensemble.knowledge_base is not None and ensemble.knowledge_base.is_loaded
     )
+    knowledge_retrieval_ready = bool(
+        ensemble.knowledge_base is not None and ensemble.knowledge_base.chroma_ready
+    )
     sgd_loaded = bool(ensemble.sgd_model is not None and ensemble.sgd_model.is_fitted)
     return HealthResponse(
         status="ok",
@@ -80,6 +83,7 @@ def health():
         sgd_loaded=sgd_loaded,
         bert_loaded=zeroshot_loaded,
         knowledge_base_loaded=knowledge_base_loaded,
+        knowledge_retrieval_ready=knowledge_retrieval_ready,
         zeroshot_loaded=zeroshot_loaded,
         primary_model=ensemble.primary_source,
         rules_count=len(ensemble.rules_engine._rules),

@@ -1,4 +1,4 @@
-"""FastAPI application factory."""
+"""fastapi app setup."""
 
 from contextlib import asynccontextmanager
 
@@ -91,13 +91,25 @@ def _load_zeroshot_model():
 
 
 def _load_knowledge_base():
-    if not settings.knowledge_base_path.exists():
-        print(f"Knowledge base not found at {settings.knowledge_base_path}.")
+    store_path = None
+    if settings.knowledge_store_path.exists():
+        store_path = settings.knowledge_store_path
+    elif settings.knowledge_base_path.exists():
+        store_path = settings.knowledge_base_path
+
+    if store_path is None:
+        print(
+            "Knowledge base not found at "
+            f"{settings.knowledge_store_path} or {settings.knowledge_base_path}."
+        )
         return None
 
     kb = MerchantKnowledgeBase()
-    kb.load(settings.knowledge_base_path)
-    print(f"Knowledge base loaded with {kb.size} entries.")
+    kb.load(store_path)
+    print(
+        f"Knowledge base loaded with {kb.size} entries "
+        f"(chroma_ready={kb.chroma_ready})."
+    )
     return kb
 
 
@@ -121,7 +133,7 @@ def _derive_version(ensemble: Ensemble) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load models on startup, clean up on shutdown."""
+    """load models on startup and clean up on shutdown."""
     rules_engine = RulesEngine()
     sgd_model = _load_sgd_model()
     primary_model = _load_primary_model()
