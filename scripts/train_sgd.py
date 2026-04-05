@@ -23,14 +23,14 @@ def main():
         print(f"ERROR: {train_path} not found. Run download_data.py first.")
         sys.exit(1)
 
-    # Load data
+    # load data
     print("Loading training data...")
     train_df = pd.read_parquet(train_path)
     val_df = pd.read_parquet(val_path)
     print(f"  Train: {len(train_df)} samples")
     print(f"  Val:   {len(val_df)} samples")
 
-    # Train
+    # train
     print("\nTraining SGD model...")
     model = SGDModel()
     start = time.perf_counter()
@@ -43,7 +43,7 @@ def main():
     print(f"  Features: {info['n_features']}")
     print(f"  Classes: {len(info['classes'])}")
 
-    # Evaluate on validation set
+    # evaluate on validation set
     print("\nEvaluating on validation set...")
     val_preds = model.predict(val_df["cleaned"].tolist())
     pred_labels = [p.category for p in val_preds]
@@ -60,7 +60,7 @@ def main():
         f"{low_conf} ({low_conf / len(pred_confidences) * 100:.1f}%)"
     )
 
-    # Save
+    # save
     save_path = settings.model_dir / "sgd"
     print(f"\nSaving model to {save_path}...")
     model.save(save_path)

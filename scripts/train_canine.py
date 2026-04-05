@@ -79,7 +79,7 @@ def main():
     print(f"  Train: {len(train_df)} samples")
     print(f"  Val:   {len(val_df)} samples")
 
-    # Stratified sample before augmentation
+    # stratified sample before augmentation
     texts = train_df["cleaned"].tolist()
     labels = train_df["category"].tolist()
 
@@ -88,7 +88,7 @@ def main():
         texts, labels = stratified_sample(texts, labels, args.max_samples)
         print(f"  After sampling: {len(texts)} samples")
 
-    # Apply abbreviation augmentation
+    # apply abbreviation augmentation
     print(f"\nAugmenting with {args.augments_per_sample} variants per sample...")
     aug_texts, aug_labels = augment_dataset(
         texts, labels, augments_per_sample=args.augments_per_sample,
@@ -96,7 +96,7 @@ def main():
     print(f"  After augmentation: {len(aug_texts)} samples "
           f"({len(aug_texts) - len(texts)} augmented)")
 
-    # Sample validation set for eval during training
+    # sample a validation set for training eval
     val_sample = val_df.sample(n=min(args.val_samples, len(val_df)), random_state=42)
 
     print(f"\nTraining CANINE (epochs={args.epochs}, batch_size={args.batch_size}, "
@@ -114,18 +114,18 @@ def main():
         batch_size=args.batch_size,
         learning_rate=args.lr,
         max_length=args.max_length,
-        max_samples=None,  # Already sampled pre-augmentation
+        max_samples=None,  # already sampled before augmentation
     )
     elapsed = time.perf_counter() - start
     print(f"  Trained in {elapsed:.1f}s")
     print(f"  Samples used: {info['train_samples']}")
 
-    # Save model
+    # save model
     save_path = settings.model_dir / "canine"
     print(f"\nSaving model to {save_path}...")
     model.save(save_path)
 
-    # Evaluate on validation subset
+    # evaluate on validation subset
     print(f"\nEvaluating on {len(val_sample)} validation samples...")
     eval_start = time.perf_counter()
     predictions = model.predict(val_sample["cleaned"].tolist())
@@ -144,7 +144,7 @@ def main():
     low_conf = sum(1 for c in pred_confidences if c < 0.70)
     print(f"Below 0.70 threshold: {low_conf} ({low_conf / len(pred_confidences) * 100:.1f}%)")
 
-    # Register in model registry
+    # register in model registry
     register_model(
         model_type="canine",
         version_dir=save_path,

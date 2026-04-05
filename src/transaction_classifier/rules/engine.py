@@ -24,7 +24,7 @@ class _CompiledRule:
     category: str
     rule_type: str  # "contains", "regex", "exact"
     priority: int
-    compiled: re.Pattern | None  # None for contains/exact
+    compiled: re.Pattern | None  # none for contains/exact
 
 
 def _compile_rule(raw: dict) -> _CompiledRule:

@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pdfplumber
 
-# Paths to bank statement PDFs
+# paths to bank statement pdfs
 MASTERCARD_DIR = Path(
     r"C:\Users\crims\Documents\0A04_Reference_Documents"
     r"\4B04_Bank\4C01_RBC\4D03_MasterCard\4E01_2025"
@@ -61,12 +61,12 @@ def extract_pages_from_pdf(pdf_path: Path) -> list[str]:
 
 def _repair_truncated_json(text: str) -> list[dict]:
     """Try to salvage transactions from truncated JSON output."""
-    # Find the last complete JSON object (ends with "}")
+    # find the last complete json object (ends with "}")
     last_brace = text.rfind("}")
     if last_brace == -1:
         return []
 
-    # Trim to last complete object and close the array
+    # trim to last complete object and close the array
     trimmed = text[: last_brace + 1].rstrip().rstrip(",") + "\n]"
 
     try:
@@ -85,7 +85,7 @@ def structure_with_gemini(raw_text: str, pdf_name: str) -> list[dict]:
 
     full_prompt = GEMINI_PROMPT + raw_text
 
-    # Write prompt to temp file with unique name to avoid Windows file locks
+    # write prompt to temp file with unique name to avoid windows file locks
     temp_prompt = OUTPUT_DIR / f"_prompt_{uuid.uuid4().hex[:8]}.txt"
     temp_prompt.write_text(full_prompt, encoding="utf-8")
 
@@ -106,7 +106,7 @@ def structure_with_gemini(raw_text: str, pdf_name: str) -> list[dict]:
 
         output = result.stdout.strip()
 
-        # Strip node deprecation warnings
+        # strip node deprecation warnings
         lines = output.split("\n")
         output = "\n".join(
             l for l in lines
@@ -114,7 +114,7 @@ def structure_with_gemini(raw_text: str, pdf_name: str) -> list[dict]:
             and "Loaded cached" not in l
         ).strip()
 
-        # Strip markdown code blocks if present
+        # strip markdown code blocks if present
         if "```json" in output:
             output = output.split("```json")[1].split("```")[0].strip()
         elif "```" in output:
@@ -123,7 +123,7 @@ def structure_with_gemini(raw_text: str, pdf_name: str) -> list[dict]:
         try:
             transactions = json.loads(output)
         except json.JSONDecodeError:
-            # Try to repair truncated JSON
+            # try to repair truncated json
             transactions = _repair_truncated_json(output)
             if transactions:
                 print(f"(repaired {len(transactions)} txns) ", end="", flush=True)
@@ -146,7 +146,7 @@ def structure_with_gemini(raw_text: str, pdf_name: str) -> list[dict]:
         try:
             temp_prompt.unlink(missing_ok=True)
         except PermissionError:
-            pass  # Windows file lock, will be cleaned up later
+            pass  # windows file lock, will be cleaned up later
 
 
 def process_pdf(pdf_path: Path, account_type: str) -> list[dict]:
@@ -160,7 +160,7 @@ def process_pdf(pdf_path: Path, account_type: str) -> list[dict]:
 
     all_transactions = []
     for i, page_text in enumerate(pages):
-        # Skip pages that don't look like they contain transactions
+        # skip pages that do not appear to contain transactions
         if not any(kw in page_text.lower() for kw in [
             "date", "description", "activity", "withdrawal", "deposit",
             "amount", "posting", "transaction",

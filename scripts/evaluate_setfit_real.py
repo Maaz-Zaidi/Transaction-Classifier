@@ -22,7 +22,7 @@ OUTPUT_DIR = PROJECT_DIR / "data" / "real"
 
 
 def main():
-    # Load pre-labeled data (Gemini labels from previous evaluation)
+    # load prelabeled data from the previous evaluation
     labeled_path = OUTPUT_DIR / "ocr_labeled.csv"
     if not labeled_path.exists():
         print(f"ERROR: {labeled_path} not found. Run evaluate_real_ocr.py first.")
@@ -31,11 +31,11 @@ def main():
     df = pd.read_csv(labeled_path)
     print(f"Loaded {len(df)} descriptions")
 
-    # Keep only rows with Gemini labels
+    # keep only rows with gemini labels
     df = df[df["gemini_category"].notna()].copy()
     print(f"Gemini-labeled: {len(df)}")
 
-    # Load SetFit model
+    # load setfit model
     setfit_path = settings.model_dir / "setfit"
     if not (setfit_path / "setfit_model").exists():
         print(f"ERROR: No SetFit model at {setfit_path}. Run train_setfit.py first.")
@@ -45,11 +45,11 @@ def main():
     setfit_model = SetFitTransactionModel()
     setfit_model.load(setfit_path)
 
-    # Build ensemble with SetFit
+    # build ensemble with setfit
     rules_engine = RulesEngine()
     ensemble = Ensemble(rules_engine=rules_engine, setfit_model=setfit_model)
 
-    # Classify
+    # classify
     print("Running ensemble (direction + rules + SetFit)...")
     results = ensemble.classify_batch(df["description"].tolist())
 
@@ -60,7 +60,7 @@ def main():
 
     df["sf_match"] = df["sf_category"] == df["gemini_category"]
 
-    # Report
+    # report
     report = []
     report.append("=" * 70)
     report.append("REAL DATA EVALUATION - Phase 3 (Direction + Rules + SetFit)")
@@ -75,7 +75,7 @@ def main():
     report.append(f"Phase 2  (direction+rules+FT):     55.7%")
     report.append(f"Phase 3  (direction+rules+SetFit): {df['sf_match'].mean():.1%}")
 
-    # By source
+    # by source
     report.append(f"\nBy classification source:")
     for source in ["direction", "rules", "setfit"]:
         subset = df[df["sf_source"] == source]
@@ -83,7 +83,7 @@ def main():
             acc = subset["sf_match"].mean()
             report.append(f"  {source}: {acc:.1%} ({subset['sf_match'].sum()}/{len(subset)})")
 
-    # By account type
+    # by account type
     report.append(f"\nBy account type:")
     for acct in ["mastercard", "chequing"]:
         subset = df[df["account_type"] == acct]
@@ -91,16 +91,16 @@ def main():
             acc = subset["sf_match"].mean()
             report.append(f"  {acct}: {acc:.1%} ({subset['sf_match'].sum()}/{len(subset)})")
 
-    # Flagged
+    # flagged
     report.append(f"\nFlagged for review: {df['sf_flagged'].sum()} "
                   f"({df['sf_flagged'].mean():.1%})")
 
-    # Category breakdown
+    # category breakdown
     report.append(f"\nAccuracy by category:")
     report.append(f"{'Category':30s} | {'Phase 2 (FT)':12s} | {'Phase 3 (SF)':12s}")
     report.append("-" * 60)
 
-    # Phase 2 results for comparison (from Phase2_Training_Results.md)
+    # phase 2 results for comparison (from phase2_training_results.md)
     phase2_by_cat = {
         "Income": "97.8%",
         "Healthcare & Medical": "100.0%",
@@ -120,7 +120,7 @@ def main():
         prev = phase2_by_cat.get(cat, "N/A")
         report.append(f"  {cat:30s} | {prev:12s} | {acc:.1%}")
 
-    # SetFit-only accuracy (how well does it do on unknown merchants?)
+    # setfit-only accuracy on unknown merchants
     setfit_only = df[df["sf_source"] == "setfit"]
     if len(setfit_only):
         report.append(f"\nSetFit-only breakdown (unknown merchants):")
@@ -133,7 +133,7 @@ def main():
             acc = subset["sf_match"].mean()
             report.append(f"  {cat:30s}: {acc:.1%} ({subset['sf_match'].sum()}/{len(subset)})")
 
-    # Mismatches
+    # mismatches
     mismatches = df[~df["sf_match"]].copy()
     if len(mismatches):
         report.append(f"\nMISMATCHES ({len(mismatches)}):")
@@ -153,7 +153,7 @@ def main():
     report_text = "\n".join(report)
     print(f"\n{report_text}")
 
-    # Save
+    # save
     report_path = OUTPUT_DIR / "setfit_eval_report.txt"
     report_path.write_text(report_text, encoding="utf-8")
     df.to_csv(OUTPUT_DIR / "setfit_labeled.csv", index=False)

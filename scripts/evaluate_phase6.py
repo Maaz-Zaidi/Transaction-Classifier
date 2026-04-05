@@ -68,7 +68,7 @@ def evaluate_model(model_name: str, ensemble: Ensemble, df: pd.DataFrame) -> dic
     results = ensemble.classify_batch(raw_texts)
     elapsed = time.perf_counter() - start
 
-    # Overall accuracy
+    # overall accuracy
     pred_labels = [r.category for r in results]
     sources = [r.source for r in results]
     confidences = [r.confidence for r in results]
@@ -77,21 +77,21 @@ def evaluate_model(model_name: str, ensemble: Ensemble, df: pd.DataFrame) -> dic
     total = len(true_labels)
     overall_acc = correct / total
 
-    # Per-source breakdown
+    # per-source breakdown
     source_counts = defaultdict(lambda: {"correct": 0, "total": 0})
     for pred, true, source in zip(pred_labels, true_labels, sources):
         source_counts[source]["total"] += 1
         if pred == true:
             source_counts[source]["correct"] += 1
 
-    # ML-only accuracy (key metric — excludes direction and rules)
+    # ml-only accuracy; excludes direction and rules
     ml_sources = {"finetune", "setfit", "fasttext", "sgd", "canine"}
     ml_correct = sum(1 for p, t, s in zip(pred_labels, true_labels, sources)
                      if s in ml_sources and p == t)
     ml_total = sum(1 for s in sources if s in ml_sources)
     ml_acc = ml_correct / ml_total if ml_total > 0 else 0.0
 
-    # Per-category breakdown
+    # per-category breakdown
     cat_counts = defaultdict(lambda: {"correct": 0, "total": 0})
     for pred, true in zip(pred_labels, true_labels):
         cat_counts[true]["total"] += 1
@@ -152,7 +152,7 @@ def format_comparison(all_metrics: list[dict]) -> str:
     lines.append("=" * 70)
     lines.append("")
 
-    # Summary table
+    # summary table
     header = f"{'Model':<20s} {'Overall':>10s} {'ML-only':>10s} {'ML n':>6s} {'Time':>8s}"
     lines.append(header)
     lines.append("-" * len(header))
@@ -166,7 +166,7 @@ def format_comparison(all_metrics: list[dict]) -> str:
         )
     lines.append("")
 
-    # Per-category comparison
+    # per-category comparison
     all_cats = sorted({c for m in all_metrics for c in m["category_breakdown"]})
     cat_header = f"{'Category':<30s}" + "".join(f" {m['model_name']:>12s}" for m in all_metrics)
     lines.append(cat_header)
@@ -190,14 +190,14 @@ def main():
                         help="Which model(s) to evaluate")
     args = parser.parse_args()
 
-    # Load test data
+    # load test data
     codex_path = settings.data_dir / "real" / "codex_labeled.csv"
     if not codex_path.exists():
         print(f"ERROR: {codex_path} not found.")
         sys.exit(1)
 
     df = pd.read_csv(codex_path)
-    # Filter rows with valid labels
+    # filter rows with valid labels
     df = df[df["codex_category"].notna() & (df["codex_category"] != "")].copy()
     print(f"Loaded {len(df)} labeled test samples from codex_labeled.csv")
     print(f"Categories: {sorted(df['codex_category'].unique())}")
@@ -205,7 +205,7 @@ def main():
 
     models_to_eval = []
     if args.model == "all":
-        # Evaluate all available models
+        # evaluate all available models
         for name in ["baseline", "augmented", "canine"]:
             try:
                 ensemble = load_ensemble(name)
@@ -232,13 +232,13 @@ def main():
         print(report)
         print()
 
-    # Comparison table if multiple models
+    # comparison table if multiple models
     if len(all_metrics) > 1:
         comparison = format_comparison(all_metrics)
         report_parts.append(comparison)
         print(comparison)
 
-    # Save report
+    # save report
     report_path = settings.data_dir / "real" / "phase6_eval_report.txt"
     full_report = "\n\n".join(report_parts)
     with open(report_path, "w") as f:

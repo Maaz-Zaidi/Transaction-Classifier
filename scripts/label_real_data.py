@@ -73,7 +73,7 @@ def label_batch_with_gemini(batch: list[dict]) -> list[dict]:
 
         output = result.stdout.strip()
 
-        # Strip noise
+        # strip noise
         lines = output.split("\n")
         output = "\n".join(
             l for l in lines
@@ -89,7 +89,7 @@ def label_batch_with_gemini(batch: list[dict]) -> list[dict]:
         try:
             labeled = json.loads(output)
         except json.JSONDecodeError:
-            # Try repair
+            # try repair
             last_brace = output.rfind("}")
             if last_brace > 0:
                 trimmed = output[: last_brace + 1].rstrip().rstrip(",") + "\n]"
@@ -123,7 +123,7 @@ def label_all_transactions(df: pd.DataFrame, batch_size: int = 25) -> pd.DataFra
 
         labeled = label_batch_with_gemini(batch_dicts)
 
-        # Match labels back to descriptions
+        # match labels back to descriptions
         label_map = {item["description"]: item["category"] for item in labeled}
         for _, row in batch.iterrows():
             if row["description"] in label_map:
@@ -138,7 +138,7 @@ def label_all_transactions(df: pd.DataFrame, batch_size: int = 25) -> pd.DataFra
 
 def test_model(df: pd.DataFrame) -> None:
     """Run the model on real transactions and compare to Gemini labels."""
-    # Load models
+    # load models
     rules_engine = RulesEngine()
     sgd_model = SGDModel()
     sgd_path = settings.model_dir / "sgd"
@@ -148,7 +148,7 @@ def test_model(df: pd.DataFrame) -> None:
     sgd_model.load(sgd_path)
     ensemble = Ensemble(rules_engine=rules_engine, sgd_model=sgd_model)
 
-    # Classify
+    # classify
     results = ensemble.classify_batch(df["description"].tolist())
 
     df = df.copy()
@@ -158,11 +158,11 @@ def test_model(df: pd.DataFrame) -> None:
     df["model_flagged"] = [r.flagged_for_review for r in results]
     df["cleaned"] = [r.cleaned for r in results]
 
-    # Only compare where we have Gemini labels
+    # compare only rows with gemini labels
     labeled = df[df["gemini_category"].notna()].copy()
     labeled["match"] = labeled["model_category"] == labeled["gemini_category"]
 
-    # Report
+    # report
     report_lines = []
     report_lines.append("=" * 70)
     report_lines.append("REAL DATA MODEL EVALUATION")
@@ -172,14 +172,14 @@ def test_model(df: pd.DataFrame) -> None:
     report_lines.append(f"Model accuracy: {labeled['match'].mean():.1%} "
                        f"({labeled['match'].sum()}/{len(labeled)})")
 
-    # By source
+    # by source
     for source in ["rules", "sgd"]:
         subset = labeled[labeled["model_source"] == source]
         if len(subset):
             acc = subset["match"].mean()
             report_lines.append(f"  {source}: {acc:.1%} ({subset['match'].sum()}/{len(subset)})")
 
-    # By account type
+    # by account type
     for acct in ["mastercard", "chequing"]:
         subset = labeled[labeled["account_type"] == acct]
         if len(subset):
@@ -189,7 +189,7 @@ def test_model(df: pd.DataFrame) -> None:
     report_lines.append(f"\nFlagged for review: {labeled['model_flagged'].sum()} "
                        f"({labeled['model_flagged'].mean():.1%})")
 
-    # Mismatches
+    # mismatches
     mismatches = labeled[~labeled["match"]]
     if len(mismatches):
         report_lines.append(f"\nMISMATCHES ({len(mismatches)}):")
@@ -206,12 +206,12 @@ def test_model(df: pd.DataFrame) -> None:
     report = "\n".join(report_lines)
     print(report)
 
-    # Save report
+    # save report
     report_path = OUTPUT_DIR / "model_vs_real_report.txt"
     report_path.write_text(report, encoding="utf-8")
     print(f"\nReport saved to {report_path}")
 
-    # Save full labeled data
+    # save full labeled data
     df.to_csv(OUTPUT_DIR / "labeled_transactions.csv", index=False)
     print(f"Full data saved to {OUTPUT_DIR / 'labeled_transactions.csv'}")
 
@@ -225,14 +225,14 @@ def main():
     df = pd.read_csv(csv_path)
     print(f"Loaded {len(df)} transactions")
 
-    # Step 1: Label with Gemini
+    # step 1: label with gemini
     print("\nStep 1: Labeling with Gemini...")
     df = label_all_transactions(df)
     unlabeled = df["gemini_category"].isna().sum()
     if unlabeled:
         print(f"WARNING: {unlabeled} transactions could not be labeled")
 
-    # Step 2: Test our model
+    # step 2: test the model
     print("\nStep 2: Testing model against Gemini labels...")
     test_model(df)
 

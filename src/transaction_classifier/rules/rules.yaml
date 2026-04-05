@@ -1,11 +1,11 @@
-# Transaction classification rules
-# Applied to CLEANED (preprocessed) transaction strings
-# Types: contains (substring match), regex, exact
-# Higher priority = checked first
+# transaction classification rules
+# applied to cleaned (preprocessed) transaction strings
+# types: contains (substring match), regex, exact
+# higher priority = checked first
 
 rules:
-  # ==================== FOOD & DINING ====================
-  # Fast food / restaurants
+  # food & dining
+  # fast food / restaurants
   - pattern: "TIM HORT"
     category: "Food & Dining"
     type: contains
@@ -76,7 +76,7 @@ rules:
     type: contains
     priority: 100
 
-  # Delivery apps
+  # delivery apps
   - pattern: "(SKIP\\s*THE\\s*DISH|SKIPTHEDISH)"
     category: "Food & Dining"
     type: regex
@@ -92,7 +92,7 @@ rules:
     type: contains
     priority: 100
 
-  # Groceries (mapped to Food & Dining in this schema)
+  # groceries (mapped to food & dining in this schema)
   - pattern: "LOBLAWS"
     category: "Food & Dining"
     type: contains
@@ -148,7 +148,7 @@ rules:
     type: contains
     priority: 100
 
-  # ==================== TRANSPORTATION ====================
+  # transportation
   - pattern: "OC TRANSPO"
     category: "Transportation"
     type: contains
@@ -229,7 +229,7 @@ rules:
     type: contains
     priority: 90
 
-  # ==================== SHOPPING & RETAIL ====================
+  # shopping & retail
   - pattern: "AMAZON"
     category: "Shopping & Retail"
     type: contains
@@ -300,7 +300,7 @@ rules:
     type: contains
     priority: 100
 
-  # ==================== ENTERTAINMENT & RECREATION ====================
+  # entertainment & recreation
   - pattern: "NETFLIX"
     category: "Entertainment & Recreation"
     type: contains
@@ -361,7 +361,7 @@ rules:
     type: contains
     priority: 80
 
-  # ==================== HEALTHCARE & MEDICAL ====================
+  # healthcare & medical
   - pattern: "SHOPPERS DRUG"
     category: "Healthcare & Medical"
     type: contains
@@ -402,7 +402,7 @@ rules:
     type: contains
     priority: 100
 
-  # ==================== UTILITIES & SERVICES ====================
+  # utilities & services
   - pattern: "ROGERS"
     category: "Utilities & Services"
     type: contains
@@ -448,7 +448,7 @@ rules:
     type: contains
     priority: 100
 
-  # ==================== FINANCIAL SERVICES ====================
+  # financial services
   - pattern: "E-TRANSFER-OUT"
     category: "Financial Services"
     type: contains
@@ -499,7 +499,7 @@ rules:
     type: contains
     priority: 100
 
-  # ==================== INCOME ====================
+  # income
   - pattern: "PAYROLL"
     category: "Income"
     type: contains
@@ -525,7 +525,7 @@ rules:
     type: regex
     priority: 90
 
-  # ==================== GOVERNMENT & LEGAL ====================
+  # government & legal
   - pattern: "CRA\\b"
     category: "Government & Legal"
     type: regex

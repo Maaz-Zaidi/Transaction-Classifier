@@ -42,19 +42,19 @@ def main():
         print(f"ERROR: {train_path} not found. Run download_data.py first.")
         sys.exit(1)
 
-    # Load data
+    # load data
     print("Loading training data...")
     train_df = pd.read_parquet(train_path)
     val_df = pd.read_parquet(val_path)
 
-    # Filter empty
+    # filter empty
     train_df = train_df[train_df["cleaned"].str.len() > 0].copy()
     val_df = val_df[val_df["cleaned"].str.len() > 0].copy()
 
     print(f"  Train: {len(train_df)} samples")
     print(f"  Val:   {len(val_df)} samples")
 
-    # Train
+    # train
     print(f"\nTraining SetFit (MiniLM) with max_samples={args.max_samples}...")
     model = SetFitTransactionModel()
     start = time.perf_counter()
@@ -71,12 +71,12 @@ def main():
     print(f"  Samples used: {info['train_samples']}")
     print(f"  Base model: {info['base_model']}")
 
-    # Save first
+    # save first
     save_path = settings.model_dir / "setfit"
     print(f"\nSaving model to {save_path}...")
     model.save(save_path)
 
-    # Evaluate on validation subset (full val set is too slow for sentence-transformers)
+    # evaluate on a validation subset
     val_sample = val_df.sample(n=min(5000, len(val_df)), random_state=42)
     print(f"\nEvaluating on {len(val_sample)} validation samples...")
 

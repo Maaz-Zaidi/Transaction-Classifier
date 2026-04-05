@@ -80,7 +80,7 @@ def label_batch_codex(batch: list[str], batch_num: int) -> dict[str, str]:
         else:
             output = result.stdout.strip()
 
-        # Strip markdown fences if present
+        # strip markdown fences if present
         if "```json" in output:
             output = output.split("```json")[1].split("```")[0].strip()
         elif "```" in output:
@@ -89,7 +89,7 @@ def label_batch_codex(batch: list[str], batch_num: int) -> dict[str, str]:
         try:
             labeled = json.loads(output)
         except json.JSONDecodeError:
-            # Try to salvage partial JSON
+            # try to salvage partial json
             last_brace = output.rfind("}")
             if last_brace > 0:
                 trimmed = output[: last_brace + 1].rstrip().rstrip(",") + "\n]"
@@ -117,7 +117,7 @@ def label_batch_codex(batch: list[str], batch_num: int) -> dict[str, str]:
 
 
 def main():
-    # Load all rows from full extraction
+    # load all rows from full extraction
     input_path = OUTPUT_DIR / "full_unique_labeled.csv"
     rows = []
     with open(input_path, "r", encoding="utf-8") as f:
@@ -126,12 +126,12 @@ def main():
         for row in reader:
             rows.append(row)
 
-    # Deduplicate by cleaned text — group rows, keep all raw variants
+    # deduplicate by cleaned text ; group rows, keep all raw variants
     cleaned_groups = defaultdict(list)
     for r in rows:
         cleaned_groups[r["cleaned"]].append(r)
 
-    # Get unique descriptions to label (use raw description for context)
+    # get unique descriptions to label
     unique_items = []
     for cleaned, group in cleaned_groups.items():
         total_occ = sum(int(r.get("occurrence_count", 1)) for r in group)
@@ -146,7 +146,7 @@ def main():
     print(f"Total unique cleaned descriptions: {len(descriptions)}")
     print(f"Labeling in batches of {BATCH_SIZE}...")
 
-    # Label in batches
+    # label in batches
     all_labels = {}
     num_batches = (len(descriptions) + BATCH_SIZE - 1) // BATCH_SIZE
 
@@ -160,14 +160,14 @@ def main():
 
     print(f"\nTotal labeled: {len(all_labels)}/{len(descriptions)}")
 
-    # Map labels back to unique items
+    # map labels back to unique items
     codex_labels = {}
     for item in unique_items:
         raw = item["raw_example"]
         if raw in all_labels:
             codex_labels[item["cleaned"]] = all_labels[raw]
 
-    # Write output: one row per unique cleaned description
+    # write output: one row per unique cleaned description
     output_path = OUTPUT_DIR / "codex_labeled.csv"
     out_fields = [
         "cleaned", "raw_example", "occurrence_count",
@@ -182,7 +182,7 @@ def main():
             cleaned = item["cleaned"]
             first = item["group"][0]
 
-            # Get Gemini label (most common across raw variants)
+            # get the gemini label from the most common raw variant
             gemini_counts = defaultdict(int)
             for r in item["group"]:
                 if r.get("gemini_category"):
@@ -202,7 +202,7 @@ def main():
 
     print(f"\nOutput: {output_path}")
 
-    # Quick accuracy summary
+    # quick accuracy summary
     labeled_items = [
         item for item in unique_items if item["cleaned"] in codex_labels
     ]

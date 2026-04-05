@@ -27,19 +27,19 @@ def main():
         print(f"ERROR: {train_path} not found. Run download_data.py first.")
         sys.exit(1)
 
-    # Load data
+    # load data
     print("Loading training data...")
     train_df = pd.read_parquet(train_path)
     val_df = pd.read_parquet(val_path)
 
-    # Filter empty cleaned texts
+    # filter empty cleaned texts
     train_df = train_df[train_df["cleaned"].str.len() > 0].copy()
     val_df = val_df[val_df["cleaned"].str.len() > 0].copy()
 
     print(f"  Train: {len(train_df)} samples")
     print(f"  Val:   {len(val_df)} samples")
 
-    # Train
+    # train
     print("\nTraining FastText model...")
     model = FastTextModel()
     start = time.perf_counter()
@@ -59,13 +59,13 @@ def main():
     print(f"  Labels: {info['labels']}")
     print(f"  Embedding dim: {info['dim']}")
 
-    # Save first (before evaluation, in case eval crashes)
+    # save first (before evaluation, in case eval crashes)
     save_path = settings.model_dir / "fasttext"
     print(f"\nSaving model to {save_path}...")
     model.save(save_path)
     print(f"Metadata: {model.metadata}")
 
-    # Evaluate on validation set
+    # evaluate on validation set
     print("\nEvaluating on validation set...")
     predictions = model.predict(val_df["cleaned"].tolist())
     pred_labels = [p[0] for p in predictions]

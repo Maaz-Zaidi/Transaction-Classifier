@@ -24,31 +24,31 @@ CHEQUING_DIR = Path(
     r"\4B04_Bank\4C01_RBC\4D02_Noirt\4E01_2025"
 )
 
-# Line classifiers
+# line classifiers
 
-# MasterCard dates: "DEC 08", "JAN 02", etc.
+# mastercard dates: "dec 08", "jan 02", etc.
 _MC_DATE = re.compile(
     r"^(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{1,2}$"
 )
-# Reference numbers: long digit strings (18+ digits)
+# reference numbers: long digit strings (18+ digits)
 _REF_NUMBER = re.compile(r"^\d{15,}$")
-# Amounts: $1,234.56 or -$1,234.56 or just 1,234.56
+# amounts: $1,234.56 or -$1,234.56 or just 1,234.56
 _AMOUNT = re.compile(r"^-?\$?[\d,]+\.\d{2}$")
-# Foreign currency / exchange rate lines
+# foreign currency / exchange rate lines
 _FOREX = re.compile(r"^(Foreign Currency|Exchange rate)", re.IGNORECASE)
 
-# Chequing dates: "27 Dec", "2 Jan", etc.
+# chequing dates: "27 dec", "2 jan", etc.
 _CHQ_DATE = re.compile(
     r"^\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)$",
     re.IGNORECASE,
 )
 
-# MasterCard header lines to skip
+# mastercard header lines to skip
 _MC_HEADERS = {
     "TRANSACTION POSTING", "ACTIVITY DESCRIPTION", "AMOUNT ($)", "DATE",
 }
 
-# Chequing header lines to skip
+# chequing header lines to skip
 _CHQ_HEADERS = {
     "Date", "Description", "Withdrawals ($)", "Deposits ($)", "Balance ($)",
     "Opening Balance", "Closing Balance",
@@ -56,7 +56,7 @@ _CHQ_HEADERS = {
     "Details of your account activity - continued",
 }
 
-# Generic skip patterns (page headers, boilerplate)
+# generic skip patterns
 _SKIP_PATTERNS = [
     re.compile(r"^RBC.*Mastercard", re.IGNORECASE),
     re.compile(r"^\d+ OF \d+$"),
@@ -123,7 +123,7 @@ _SKIP_PATTERNS = [
     re.compile(r"^\$$"),
     re.compile(r"^01\d{4}$"),
     re.compile(r"^\d{2} [A-Z]+MEADOW"),
-    # E-transfer reference codes (alphanumeric, ~12 chars)
+    # e-transfer reference codes
     re.compile(r"^[A-Za-z0-9]{10,14}$"),
 ]
 
@@ -146,20 +146,20 @@ def extract_mastercard_descriptions(pdf_path: Path) -> list[str]:
     descriptions = []
     doc = fitz.open(str(pdf_path))
 
-    # Stop markers, anything after these on a page is not transactions
+    # stop markers; anything after these on a page is not a transaction
     stop_markers = {
         "TOTAL ACCOUNT BALANCE", "Time to Pay", "CASH BACK SUMMARY",
         "IMPORTANT INFORMATION", "CONTACT US", "PAYMENTS & INTEREST RATES",
         "Thank you for choosing",
     }
 
-    # Non-transaction lines that appear inside the table
+    # non-transaction lines that appear inside the table
     skip_descriptions = re.compile(
         r"^(CASH (ADVANCE|BACK) (INTEREST|REWARD)|"
         r"Previous Cash Back|Cash Back on|New Cash Back)",
         re.IGNORECASE,
     )
-    # pymupdf sometimes joins a posting date to the description on one line
+    # pymupdf sometimes joins a posting date to the description
     _leading_date = re.compile(
         r"^(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+\d{1,2}\s+",
     )
@@ -168,11 +168,11 @@ def extract_mastercard_descriptions(pdf_path: Path) -> list[str]:
         text = page.get_text()
         lines = text.strip().split("\n")
 
-        # Find where transaction data starts on this page
+        # find where transaction data starts on the page
         start = None
         for idx, line in enumerate(lines):
             if "ACTIVITY DESCRIPTION" in line:
-                # Skip past the DATE/DATE header lines after ACTIVITY DESCRIPTION
+                # skip the date header lines after activity description
                 start = idx + 1
                 while start < len(lines) and lines[start].strip() in (
                     "AMOUNT ($)", "DATE", ""
@@ -191,7 +191,7 @@ def extract_mastercard_descriptions(pdf_path: Path) -> list[str]:
             if not line or line == ".":
                 continue
 
-            # Stop at end-of-table markers
+            # stop at end-of-table markers
             if any(line.startswith(m) for m in stop_markers):
                 break
 
@@ -206,12 +206,12 @@ def extract_mastercard_descriptions(pdf_path: Path) -> list[str]:
             if skip_descriptions.match(line):
                 continue
 
-            # Strip leading date if pymupdf joined it with the description
+            # strip leading date if pymupdf joined it with the description
             line = _leading_date.sub("", line).strip()
             if not line:
                 continue
 
-            # What remains should be a transaction description
+            # the remaining text is the transaction description
             descriptions.append(line)
 
     doc.close()
@@ -230,7 +230,7 @@ def extract_chequing_descriptions(pdf_path: Path) -> list[str]:
         text = page.get_text()
         lines = text.strip().split("\n")
 
-        # Find where transaction activity starts
+        # find where transaction activity starts
         activity_start = None
         for idx, line in enumerate(lines):
             if "Opening Balance" in line or "Details of your account activity" in line:
@@ -240,7 +240,7 @@ def extract_chequing_descriptions(pdf_path: Path) -> list[str]:
         if activity_start is None:
             continue
 
-        # Parse the activity section
+        # parse the activity section
         current_desc_lines: list[str] = []
         i = activity_start
         while i < len(lines):
@@ -250,7 +250,7 @@ def extract_chequing_descriptions(pdf_path: Path) -> list[str]:
             if not line or line == ".":
                 continue
 
-            # Stop at closing balance or boilerplate
+            # stop at closing balance or boilerplate
             if "Closing Balance" in line:
                 break
             if line.startswith("Please check"):
@@ -259,26 +259,26 @@ def extract_chequing_descriptions(pdf_path: Path) -> list[str]:
             if _is_skip_line(line):
                 continue
 
-            # Dates signal a new transaction
+            # dates signal a new transaction
             if _CHQ_DATE.match(line):
-                # Save any accumulated description
+                # save any accumulated description
                 if current_desc_lines:
                     descriptions.append(" ".join(current_desc_lines))
                     current_desc_lines = []
                 continue
 
-            # Amounts/balances
+            # amounts/balances
             if _AMOUNT.match(line):
-                # Save accumulated description before this amount
+                # save the accumulated description before this amount
                 if current_desc_lines:
                     descriptions.append(" ".join(current_desc_lines))
                     current_desc_lines = []
                 continue
 
-            # Otherwise it's part of a description
+            # otherwise it is part of the description
             current_desc_lines.append(line)
 
-        # Don't forget the last one
+        # save the last one
         if current_desc_lines:
             descriptions.append(" ".join(current_desc_lines))
 
@@ -324,7 +324,7 @@ def main():
         print("\nNo descriptions extracted.")
         return
 
-    # Write CSV
+    # write csv
     import csv
 
     output_path = OUTPUT_DIR / "descriptions_ocr.csv"
@@ -339,7 +339,7 @@ def main():
     print(f"\nTotal: {len(all_descriptions)} descriptions ({mc} MC, {chq} chequing)")
     print(f"Saved to {output_path}")
 
-    # Print sample
+    # print sample
     print(f"\nSample descriptions:")
     seen = set()
     for d in all_descriptions:

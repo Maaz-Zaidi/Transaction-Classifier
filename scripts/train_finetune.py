@@ -48,7 +48,7 @@ def main():
     print(f"  Train: {len(train_df)} samples")
     print(f"  Val:   {len(val_df)} samples")
 
-    # Sample validation set for eval during training
+    # sample a validation set for training eval
     val_sample = val_df.sample(n=min(args.val_samples, len(val_df)), random_state=42)
 
     print(f"\nTraining fine-tuned MiniLM (max_samples={args.max_samples}, "
@@ -70,12 +70,12 @@ def main():
     print(f"  Trained in {elapsed:.1f}s")
     print(f"  Samples used: {info['train_samples']}")
 
-    # Save before eval
+    # save before eval
     save_path = settings.model_dir / "finetune"
     print(f"\nSaving model to {save_path}...")
     model.save(save_path)
 
-    # Evaluate on validation subset
+    # evaluate on validation subset
     print(f"\nEvaluating on {len(val_sample)} validation samples...")
     eval_start = time.perf_counter()
     predictions = model.predict(val_sample["cleaned"].tolist())

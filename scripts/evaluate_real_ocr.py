@@ -78,7 +78,7 @@ def label_batch(batch: list[str]) -> dict[str, str]:
 
         output = result.stdout.strip()
 
-        # Strip noise
+        # strip noise
         lines = output.split("\n")
         output = "\n".join(
             l for l in lines
@@ -118,7 +118,7 @@ def label_batch(batch: list[str]) -> dict[str, str]:
 
 
 def main():
-    # Load OCR descriptions
+    # load ocr descriptions
     csv_path = OUTPUT_DIR / "descriptions_ocr.csv"
     if not csv_path.exists():
         print(f"ERROR: {csv_path} not found. Run extract_descriptions_ocr.py first.")
@@ -127,11 +127,11 @@ def main():
     df = pd.read_csv(csv_path)
     print(f"Loaded {len(df)} descriptions ({df['account_type'].value_counts().to_dict()})")
 
-    # Deduplicate for labeling efficiency, label unique descriptions only
+    # deduplicate so only unique descriptions are labeled
     unique_descs = df["description"].unique().tolist()
     print(f"Unique descriptions: {len(unique_descs)}")
 
-    # Step 1: Label with Gemini
+    # step 1: label with gemini
     print("\nStep 1: Labeling unique descriptions with Gemini...")
     all_labels = {}
     batch_size = 30
@@ -152,7 +152,7 @@ def main():
     print(f"\nLabeled: {len(df) - unlabeled}/{len(df)}"
           f" ({unlabeled} could not be labeled)")
 
-    # Step 2: Run our model (two-stage: direction + rules + FastText)
+    # step 2: run the model (direction + rules + fasttext)
     print("\nStep 2: Running ensemble classifier (direction + rules + FastText)...")
     rules_engine = RulesEngine()
     ft_model = FastTextModel()
@@ -170,7 +170,7 @@ def main():
     df["model_flagged"] = [r.flagged_for_review for r in results]
     df["cleaned"] = [r.cleaned for r in results]
 
-    # Step 3: Compare
+    # step 3: compare
     labeled = df[df["gemini_category"].notna()].copy()
     labeled["match"] = labeled["model_category"] == labeled["gemini_category"]
 
@@ -183,14 +183,14 @@ def main():
     report.append(f"Overall accuracy: {labeled['match'].mean():.1%} "
                   f"({labeled['match'].sum()}/{len(labeled)})")
 
-    # Previous results for comparison
+    # previous results for comparison
     report.append(f"\nComparison across evaluations:")
     report.append(f"Phase 1 (pdfplumber + SGD):      43.4% (139/320)")
     report.append(f"Phase 1b (pymupdf + SGD):         53.7% (267/497)")
     report.append(f"Phase 2  (direction+rules+FT):    {labeled['match'].mean():.1%} "
                   f"({labeled['match'].sum()}/{len(labeled)})")
 
-    # By source
+    # by source
     report.append(f"\nBy classification source:")
     for source in ["direction", "rules", "fasttext"]:
         subset = labeled[labeled["model_source"] == source]
@@ -198,7 +198,7 @@ def main():
             acc = subset["match"].mean()
             report.append(f"  {source}: {acc:.1%} ({subset['match'].sum()}/{len(subset)})")
 
-    # By account type
+    # by account type
     report.append(f"\nBy account type:")
     for acct in ["mastercard", "chequing"]:
         subset = labeled[labeled["account_type"] == acct]
@@ -208,19 +208,19 @@ def main():
             prev = {"mastercard": "67.3%", "chequing": "32.5%"}
             report.append(f"    (Phase 1b: {prev.get(acct, 'N/A')})")
 
-    # Flagged
+    # flagged
     report.append(f"\nFlagged for review: {labeled['model_flagged'].sum()} "
                   f"({labeled['model_flagged'].mean():.1%})")
     report.append(f"  (previous: 51.9%)")
 
-    # Category breakdown
+    # category breakdown
     report.append(f"\nAccuracy by Gemini category:")
     for cat in sorted(labeled["gemini_category"].unique()):
         subset = labeled[labeled["gemini_category"] == cat]
         acc = subset["match"].mean()
         report.append(f"  {cat:30s}: {acc:.1%} ({subset['match'].sum()}/{len(subset)})")
 
-    # Mismatches
+    # mismatches
     mismatches = labeled[~labeled["match"]].copy()
     if len(mismatches):
         report.append(f"\nMISMATCHES ({len(mismatches)}):")
@@ -241,7 +241,7 @@ def main():
     report_text = "\n".join(report)
     print(f"\n{report_text}")
 
-    # Save
+    # save
     report_path = OUTPUT_DIR / "ocr_eval_report.txt"
     report_path.write_text(report_text, encoding="utf-8")
     df.to_csv(OUTPUT_DIR / "ocr_labeled.csv", index=False)

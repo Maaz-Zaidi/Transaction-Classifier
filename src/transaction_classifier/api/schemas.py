@@ -42,4 +42,7 @@ class HealthResponse(BaseModel):
     model_version: str
     sgd_loaded: bool
     bert_loaded: bool
+    knowledge_base_loaded: bool = False
+    zeroshot_loaded: bool = False
+    primary_model: str = "none"
     rules_count: int

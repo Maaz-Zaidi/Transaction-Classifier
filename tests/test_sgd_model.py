@@ -72,7 +72,7 @@ def test_save_and_load(trained_model):
         loaded.load(path)
         assert loaded.is_fitted
 
-        # Predictions should match
+        # predictions match
         texts = ["TIM HORTONS", "UBER"]
         orig_preds = trained_model.predict(texts)
         loaded_preds = loaded.predict(texts)

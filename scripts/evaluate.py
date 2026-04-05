@@ -26,7 +26,7 @@ def main():
     test_df = pd.read_parquet(test_path)
     print(f"  Test: {len(test_df)} samples")
 
-    # Load models
+    # load models
     rules_engine = RulesEngine()
     sgd_model = SGDModel()
     sgd_path = settings.model_dir / "sgd"
@@ -37,7 +37,7 @@ def main():
 
     ensemble = Ensemble(rules_engine=rules_engine, sgd_model=sgd_model)
 
-    # Classify
+    # classify
     print("\nClassifying test set...")
     start = time.perf_counter()
     results = ensemble.classify_batch(test_df["transaction_description"].tolist())
@@ -45,7 +45,7 @@ def main():
     print(f"  Classified {len(results)} transactions in {elapsed:.1f}s")
     print(f"  Throughput: {len(results) / elapsed:.0f} transactions/sec")
 
-    # Analyze sources
+    # analyze sources
     sources = [r.source for r in results]
     for source in ["rules", "sgd", "bert"]:
         count = sources.count(source)
@@ -56,7 +56,7 @@ def main():
     flagged = sum(1 for r in results if r.flagged_for_review)
     print(f"  Flagged for review: {flagged} ({flagged / len(results) * 100:.1f}%)")
 
-    # Accuracy
+    # accuracy
     pred_labels = [r.category for r in results]
     true_labels = test_df["category"].tolist()
 
@@ -65,7 +65,7 @@ def main():
     print("=" * 60)
     print(classification_report(true_labels, pred_labels))
 
-    # Per-source accuracy
+    # per-source accuracy
     for source in ["rules", "sgd"]:
         indices = [i for i, s in enumerate(sources) if s == source]
         if indices:
@@ -75,7 +75,7 @@ def main():
             acc = correct / len(indices) * 100
             print(f"{source} accuracy: {acc:.1f}% ({correct}/{len(indices)})")
 
-    # Confusion matrix (abbreviated)
+    # confusion matrix (abbreviated)
     print("\nConfusion matrix saved to stdout. Categories:")
     labels = sorted(set(true_labels))
     cm = confusion_matrix(true_labels, pred_labels, labels=labels)

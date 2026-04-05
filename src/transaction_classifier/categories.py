@@ -27,8 +27,8 @@ LABEL_MAP: dict[str, Category] = {
     "Charity & Donations": Category.CHARITY_AND_DONATIONS,
 }
 
-# Reverse mapping: enum -> display label
+# reverse mapping: enum -> display label
 CATEGORY_NAMES: dict[Category, str] = {v: k for k, v in LABEL_MAP.items()}
 
-# Ordered list of all label strings (for SGDClassifier classes= parameter)
+# ordered list of all label strings (for sgdclassifier classes= parameter)
 ALL_LABELS: list[str] = [CATEGORY_NAMES[Category(i)] for i in range(len(Category))]

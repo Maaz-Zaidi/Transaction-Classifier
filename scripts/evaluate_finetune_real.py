@@ -31,7 +31,7 @@ def main():
     df = df[df["gemini_category"].notna()].copy()
     print(f"Loaded {len(df)} Gemini-labeled descriptions")
 
-    # Load fine-tuned model
+    # load fine-tuned model
     ft_path = settings.model_dir / "finetune"
     if not (ft_path / "model").exists():
         print(f"ERROR: No fine-tuned model at {ft_path}. Run train_finetune.py first.")
@@ -41,7 +41,7 @@ def main():
     ft_model = FineTuneModel()
     ft_model.load(ft_path)
 
-    # Build ensemble
+    # build ensemble
     rules_engine = RulesEngine()
     ensemble = Ensemble(rules_engine=rules_engine, finetune_model=ft_model)
 
@@ -54,7 +54,7 @@ def main():
     df["ft_flagged"] = [r.flagged_for_review for r in results]
     df["ft_match"] = df["ft_category"] == df["gemini_category"]
 
-    # Report
+    # report
     report = []
     report.append("=" * 70)
     report.append("REAL DATA EVALUATION - Phase 4 (Direction + Rules + Fine-tuned MiniLM)")
@@ -70,7 +70,7 @@ def main():
     report.append(f"Phase 3  (direction+rules+SetFit):    80.5%")
     report.append(f"Phase 4  (direction+rules+FineTune):  {df['ft_match'].mean():.1%}")
 
-    # By source
+    # by source
     report.append(f"\nBy classification source:")
     for source in ["direction", "rules", "finetune"]:
         subset = df[df["ft_source"] == source]
@@ -78,7 +78,7 @@ def main():
             acc = subset["ft_match"].mean()
             report.append(f"  {source}: {acc:.1%} ({subset['ft_match'].sum()}/{len(subset)})")
 
-    # By account type
+    # by account type
     report.append(f"\nBy account type:")
     for acct in ["mastercard", "chequing"]:
         subset = df[df["account_type"] == acct]
@@ -86,11 +86,11 @@ def main():
             acc = subset["ft_match"].mean()
             report.append(f"  {acct}: {acc:.1%} ({subset['ft_match'].sum()}/{len(subset)})")
 
-    # Flagged
+    # flagged
     report.append(f"\nFlagged for review: {df['ft_flagged'].sum()} "
                   f"({df['ft_flagged'].mean():.1%})")
 
-    # Category breakdown
+    # category breakdown
     report.append(f"\nAccuracy by category:")
     report.append(f"{'Category':30s} | {'Phase 3 (SF)':12s} | {'Phase 4 (FT)':12s}")
     report.append("-" * 60)
@@ -109,7 +109,7 @@ def main():
         prev = phase3_by_cat.get(cat, "N/A")
         report.append(f"  {cat:30s} | {prev:12s} | {acc:.1%}")
 
-    # ML-only accuracy
+    # ml-only accuracy
     ml_only = df[df["ft_source"] == "finetune"]
     if len(ml_only):
         report.append(f"\nFine-tune-only breakdown (unknown merchants):")
@@ -122,7 +122,7 @@ def main():
             acc = subset["ft_match"].mean()
             report.append(f"  {cat:30s}: {acc:.1%} ({subset['ft_match'].sum()}/{len(subset)})")
 
-    # Mismatches
+    # mismatches
     mismatches = df[~df["ft_match"]].copy()
     if len(mismatches):
         report.append(f"\nMISMATCHES ({len(mismatches)}):")
@@ -142,7 +142,7 @@ def main():
     report_text = "\n".join(report)
     print(f"\n{report_text}")
 
-    # Save
+    # save
     report_path = OUTPUT_DIR / "finetune_eval_report.txt"
     report_path.write_text(report_text, encoding="utf-8")
     df.to_csv(OUTPUT_DIR / "finetune_labeled.csv", index=False)

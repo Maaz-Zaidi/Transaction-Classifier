@@ -31,7 +31,7 @@ from transaction_classifier.models.ensemble import Ensemble
 from transaction_classifier.models.finetune_model import FineTuneModel
 from transaction_classifier.rules.engine import RulesEngine
 
-# Import extraction functions from the existing script
+# import extraction functions from the existing script
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from extract_descriptions_ocr import (
     extract_mastercard_descriptions,
@@ -93,7 +93,7 @@ def label_batch(batch: list[str]) -> dict[str, str]:
         )
         output = result.stdout.strip()
 
-        # Strip noise
+        # strip noise
         lines = output.split("\n")
         output = "\n".join(
             l for l in lines
@@ -139,7 +139,7 @@ def label_batch(batch: list[str]) -> dict[str, str]:
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    # ── Step 1: Extract from ALL PDFs ──
+    # step 1: extract from all pdfs
     print("=" * 70)
     print("STEP 1: Extracting descriptions from all bank statement PDFs")
     print("=" * 70)
@@ -170,20 +170,20 @@ def main():
     chq = (df_all["account_type"] == "chequing").sum()
     print(f"\n  Total extracted: {len(df_all)} ({mc} MC, {chq} chequing)")
 
-    # Save full extraction
+    # save full extraction
     full_path = OUTPUT_DIR / "full_descriptions.csv"
     df_all.to_csv(full_path, index=False)
 
-    # ── Step 2: Deduplicate ──
+    # step 2: deduplicate
     print(f"\n{'=' * 70}")
     print("STEP 2: Deduplicating")
     print("=" * 70)
 
-    # Unique descriptions with account_type (keep first occurrence)
+    # unique descriptions with account_type; keep the first occurrence
     df_unique = df_all.drop_duplicates(subset=["description"]).copy()
     df_unique = df_unique.reset_index(drop=True)
 
-    # Count occurrences of each description
+    # count occurrences of each description
     desc_counts = df_all["description"].value_counts().to_dict()
     df_unique["occurrence_count"] = df_unique["description"].map(desc_counts)
 
@@ -194,7 +194,7 @@ def main():
     for desc, count in sorted(desc_counts.items(), key=lambda x: -x[1])[:10]:
         print(f"    {count:3d}x  {desc[:70]}")
 
-    # ── Step 3: Preprocess and verify ──
+    # step 3: preprocess and verify
     print(f"\n{'=' * 70}")
     print("STEP 3: Preprocessing verification")
     print("=" * 70)
@@ -207,13 +207,13 @@ def main():
         for _, row in df_unique[df_unique["cleaned"] == ""].iterrows():
             print(f"    [{row['account_type'][:2].upper()}] {row['description']}")
 
-    # Show some preprocessing examples
+    # show some preprocessing examples
     print(f"\n  Sample preprocessing:")
     samples = df_unique.sample(min(15, len(df_unique)), random_state=42)
     for _, row in samples.iterrows():
         print(f"    {row['description'][:55]:55s} => [{row['cleaned']}]")
 
-    # ── Step 4: Label unique descriptions with Gemini ──
+    # step 4: label unique descriptions with gemini
     print(f"\n{'=' * 70}")
     print("STEP 4: Labeling unique descriptions with Gemini")
     print("=" * 70)
@@ -239,7 +239,7 @@ def main():
     labeled_count = len(df_unique) - unlabeled
     print(f"\n  Labeled: {labeled_count}/{len(df_unique)} ({unlabeled} unlabeled)")
 
-    # ── Step 5: Run our model ──
+    # step 5: run the model
     print(f"\n{'=' * 70}")
     print("STEP 5: Running ensemble classifier (direction + rules + fine-tuned MiniLM)")
     print("=" * 70)
@@ -260,7 +260,7 @@ def main():
     df_unique["model_source"] = [r.source for r in results]
     df_unique["model_flagged"] = [r.flagged_for_review for r in results]
 
-    # ── Step 6: Compare (on labeled subset only) ──
+    # step 6: compare on the labeled subset
     print(f"\n{'=' * 70}")
     print("STEP 6: Evaluation (deduplicated, unique descriptions only)")
     print("=" * 70)
@@ -280,7 +280,7 @@ def main():
     report.append(f"Overall accuracy (unique): {labeled['match'].mean():.1%} "
                   f"({labeled['match'].sum()}/{len(labeled)})")
 
-    # Weighted accuracy (accounting for duplicates)
+    # weighted accuracy with duplicates
     labeled_with_counts = labeled.copy()
     weighted_correct = (labeled_with_counts["match"] * labeled_with_counts["occurrence_count"]).sum()
     weighted_total = labeled_with_counts["occurrence_count"].sum()
@@ -290,7 +290,7 @@ def main():
     report.append(f"\nPrevious results (smaller test set):")
     report.append(f"  Phase 4b (497 descs, with dupes):  86.5%")
 
-    # By source
+    # by source
     report.append(f"\nBy classification source:")
     for source in ["direction", "rules", "finetune"]:
         subset = labeled[labeled["model_source"] == source]
@@ -298,7 +298,7 @@ def main():
             acc = subset["match"].mean()
             report.append(f"  {source}: {acc:.1%} ({subset['match'].sum()}/{len(subset)})")
 
-    # By account type
+    # by account type
     report.append(f"\nBy account type:")
     for acct in ["mastercard", "chequing"]:
         subset = labeled[labeled["account_type"] == acct]
@@ -306,7 +306,7 @@ def main():
             acc = subset["match"].mean()
             report.append(f"  {acct}: {acc:.1%} ({subset['match'].sum()}/{len(subset)})")
 
-    # By category
+    # by category
     report.append(f"\nAccuracy by category:")
     report.append(f"{'Category':30s} | {'Accuracy':10s} | {'Correct/Total':15s}")
     report.append("-" * 60)
@@ -315,7 +315,7 @@ def main():
         acc = subset["match"].mean()
         report.append(f"  {cat:30s} | {acc:10.1%} | {subset['match'].sum()}/{len(subset)}")
 
-    # ML-only breakdown
+    # ml-only breakdown
     ml_only = labeled[labeled["model_source"] == "finetune"]
     if len(ml_only):
         report.append(f"\nFine-tune-only (unknown merchants):")
@@ -327,7 +327,7 @@ def main():
             acc = subset["match"].mean()
             report.append(f"    {cat:30s}: {acc:.1%} ({subset['match'].sum()}/{len(subset)})")
 
-    # Mismatches
+    # mismatches
     mismatches = labeled[~labeled["match"]].copy()
     report.append(f"\nMISMATCHES ({len(mismatches)}):")
     report.append(
@@ -346,7 +346,7 @@ def main():
     report_text = "\n".join(report)
     print(f"\n{report_text}")
 
-    # Save
+    # save
     report_path = OUTPUT_DIR / "full_eval_report.txt"
     report_path.write_text(report_text, encoding="utf-8")
     df_unique.to_csv(OUTPUT_DIR / "full_unique_labeled.csv", index=False)

@@ -17,7 +17,7 @@ from transaction_classifier.models.ensemble import Ensemble
 
 router = APIRouter()
 
-# Set by app.py at startup
+# set by app.py at startup
 _ensemble: Ensemble | None = None
 _model_version: str = "unknown"
 
@@ -67,10 +67,20 @@ def categories():
 @router.get("/health", response_model=HealthResponse)
 def health():
     ensemble = _get_ensemble()
+    zeroshot_loaded = bool(
+        ensemble.zeroshot_model is not None and ensemble.zeroshot_model.is_loaded
+    )
+    knowledge_base_loaded = bool(
+        ensemble.knowledge_base is not None and ensemble.knowledge_base.is_loaded
+    )
+    sgd_loaded = bool(ensemble.sgd_model is not None and ensemble.sgd_model.is_fitted)
     return HealthResponse(
         status="ok",
         model_version=_model_version,
-        sgd_loaded=ensemble.sgd_model.is_fitted,
-        bert_loaded=ensemble.bert_model is not None,
+        sgd_loaded=sgd_loaded,
+        bert_loaded=zeroshot_loaded,
+        knowledge_base_loaded=knowledge_base_loaded,
+        zeroshot_loaded=zeroshot_loaded,
+        primary_model=ensemble.primary_source,
         rules_count=len(ensemble.rules_engine._rules),
     )
