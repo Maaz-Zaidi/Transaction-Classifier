@@ -5,16 +5,23 @@ from __future__ import annotations
 from collections import Counter
 
 
+# specific keywords get higher weight than generic structural ones.
+# this ensures "Retail > Grocery Store" resolves to Food (GROCERY=2.0)
+# rather than tying with Shopping (RETAIL=1.0).
+_GENERIC_KEYWORDS: set[str] = {"RETAIL", "STORE", "SHOP", "SERVICE", "CENTER", "CENTRE"}
+
 _KEYWORD_RULES: dict[str, tuple[str, ...]] = {
     "Food & Dining": (
         "DINING AND DRINKING",
         "RESTAURANT",
         "CAFE",
         "COFFEE",
-        "TEA",
+        "TEA HOUSE",
         "BAKERY",
         "BUBBLE TEA",
         "FOOD AND BEVERAGE RETAIL",
+        "FOOD AND BEVERAGE SERVICE",
+        "FOOD SERVICE",
         "GROCERY",
         "SUPERMARKET",
         "DELI",
@@ -25,17 +32,36 @@ _KEYWORD_RULES: dict[str, tuple[str, ...]] = {
         "FAST FOOD",
         "SANDWICH",
         "CONVENIENCE STORE",
+        "DESSERT",
+        "JUICE",
+        "BISTRO",
+        "STEAKHOUSE",
+        "SEAFOOD",
+        "NOODLE",
+        "SUSHI",
+        "DONUT",
+        "BAGEL",
+        "BREAKFAST",
+        "BRUNCH",
+        "WINGS",
+        "BBQ",
+        "RAMEN",
+        "POKE",
+        "SOUP",
+        "FOOD TRUCK",
+        "CATERING",
     ),
     "Transportation": (
         "TRANSPORTATION",
         "GAS STATION",
+        "FUEL STATION",
         "PARKING",
-        "AUTOMOTIVE",
         "CAR WASH",
         "TRANSIT",
         "AIRPORT",
         "TRAIN STATION",
         "BUS STATION",
+        "REST AREA",
     ),
     "Shopping & Retail": (
         "RETAIL",
@@ -49,6 +75,16 @@ _KEYWORD_RULES: dict[str, tuple[str, ...]] = {
         "DISCOUNT STORE",
         "JEWELRY",
         "SHOPPING MALL",
+        "WAREHOUSE",
+        "WHOLESALE",
+        "THRIFT",
+        "VINTAGE",
+        "GIFT",
+        "PET STORE",
+        "SPORTING GOODS",
+        "TOY",
+        "COSMETICS",
+        "MISCELLANEOUS STORE",
     ),
     "Entertainment & Recreation": (
         "ARTS AND ENTERTAINMENT",
@@ -56,12 +92,20 @@ _KEYWORD_RULES: dict[str, tuple[str, ...]] = {
         "MUSEUM",
         "GYM",
         "FITNESS",
-        "SPORTS",
+        "SPORTS AND RECREATION",
         "RECREATION",
         "ARCADE",
         "NIGHT CLUB",
         "MUSIC VENUE",
         "CASINO",
+        "BOWLING",
+        "AMUSEMENT",
+        "THEME PARK",
+        "PERFORMING ARTS",
+        "CONCERT",
+        "STADIUM",
+        "ARENA",
+        "GAMING",
     ),
     "Healthcare & Medical": (
         "HEALTH AND MEDICINE",
@@ -72,6 +116,11 @@ _KEYWORD_RULES: dict[str, tuple[str, ...]] = {
         "CLINIC",
         "MEDICAL",
         "OPTICAL",
+        "OPTOMETRIST",
+        "VETERINARIAN",
+        "PHYSIOTHERAPY",
+        "CHIROPRACT",
+        "MENTAL HEALTH",
     ),
     "Utilities & Services": (
         "UTILITY",
@@ -81,10 +130,20 @@ _KEYWORD_RULES: dict[str, tuple[str, ...]] = {
         "LAUNDRY",
         "DRY CLEANER",
         "HOME SERVICE",
+        "HOME IMPROVEMENT SERVICE",
         "POST OFFICE",
         "SHIPPING",
         "BARBER",
         "SALON",
+        "CLEANING SERVICE",
+        "CONTRACTOR",
+        "PLUMBER",
+        "ELECTRICIAN",
+        "LOCKSMITH",
+        "TAILOR",
+        "PRINTING",
+        "MOVING",
+        "STORAGE",
     ),
     "Financial Services": (
         "FINANCIAL SERVICE",
@@ -94,12 +153,18 @@ _KEYWORD_RULES: dict[str, tuple[str, ...]] = {
         "CREDIT UNION",
         "CURRENCY EXCHANGE",
         "LOAN",
+        "ACCOUNTING",
+        "TAX PREPARATION",
     ),
     "Government & Legal": (
         "GOVERNMENT",
         "LEGAL SERVICE",
         "COURTHOUSE",
         "EMBASSY",
+        "EDUCATION",
+        "COLLEGE",
+        "UNIVERSITY",
+        "SCHOOL",
     ),
     "Charity & Donations": (
         "NONPROFIT",
@@ -107,19 +172,48 @@ _KEYWORD_RULES: dict[str, tuple[str, ...]] = {
         "RELIGIOUS ORGANIZATION",
         "CHARITY",
         "COMMUNITY CENTER",
+        "SPIRITUAL CENTER",
+        "CHURCH",
+        "MOSQUE",
+        "SYNAGOGUE",
+        "TEMPLE",
+        "PLACE OF WORSHIP",
     ),
 }
 
+# automotive service is transportation (repair shops, tire service, etc.)
+# but generic "AUTOMOTIVE" in retail context is shopping (car dealership)
+_AUTOMOTIVE_TRANSPORT_KEYWORDS: tuple[str, ...] = (
+    "AUTOMOTIVE SERVICE",
+    "AUTOMOTIVE REPAIR",
+    "TIRE",
+    "OIL CHANGE",
+    "AUTO BODY",
+)
+
 
 def map_foursquare_labels(labels: list[str]) -> tuple[str | None, float]:
-    """Map Foursquare category paths into the project's coarse taxonomy."""
+    """Map Foursquare category paths into the project's coarse taxonomy.
+
+    Uses per-keyword scoring with specificity weighting so that specific
+    category keywords (GROCERY, PHARMACY) outweigh generic structural
+    keywords (RETAIL, STORE) when both appear in the same label.
+    """
     scores: Counter[str] = Counter()
     for label in labels:
         upper = label.upper()
         depth_bonus = 1.0 + (upper.count(">") * 0.1)
+
+        # check automotive service -> transportation
+        for kw in _AUTOMOTIVE_TRANSPORT_KEYWORDS:
+            if kw in upper:
+                scores["Transportation"] += depth_bonus * 2.0
+
         for category, keywords in _KEYWORD_RULES.items():
-            if any(keyword in upper for keyword in keywords):
-                scores[category] += depth_bonus
+            for keyword in keywords:
+                if keyword in upper:
+                    weight = 1.0 if keyword in _GENERIC_KEYWORDS else 2.0
+                    scores[category] += depth_bonus * weight
 
     if not scores:
         return None, 0.0
@@ -128,7 +222,7 @@ def map_foursquare_labels(labels: list[str]) -> tuple[str | None, float]:
     total = float(sum(scores.values()))
     confidence = best_score / total if total else 0.0
 
-    if confidence < 0.55:
+    if confidence < 0.40:
         return None, confidence
     return best_category, confidence
 
