@@ -1,24 +1,24 @@
-# Phase 5: Full corpus evaluation with Codex labels
+# Phase 5: Full corpus evaluation with openai labels
 
 **Date:** 2026-04-02
 
 ## What changed
 
-Expanded test set from 497 descriptions (small 2025 sample) to full corpus: 114 PDFs (39 MasterCard 2022-2025, 76 Noirt/chequing 2019-2026). Re-labeled all descriptions using OpenAI Codex CLI instead of Gemini, with proper deduplication on cleaned text.
+Expanded test set from 497 descriptions (small 2025 sample) to full corpus: 114 PDFs (39 MasterCard 2022-2025, 76 Noirt/chequing 2019-2026). Re-labeled all descriptions using OpenAI openai CLI instead of Gemini, with proper deduplication on cleaned text.
 
 ## Dataset
 
 - **Total extracted:** 3,113 descriptions from 114 PDFs
 - **Raw unique:** 1,380
 - **Cleaned unique:** 505 (deduplication on preprocessed text, not raw)
-- **Codex labeled:** 505/505 (100% coverage vs Gemini's 59%)
-- **Codex-Gemini agreement:** 93.3% on overlap (329 descriptions)
+- **openai labeled:** 505/505 (100% coverage vs Gemini's 59%)
+- **openai-Gemini agreement:** 93.3% on overlap (329 descriptions)
 
 ### Key improvements over previous evaluation
 
 1. **Proper deduplication:** Previous eval treated "Visa Debit purchase - 9467 AMZN Mktp CA" and "Visa Debit purchase - 2912 AMZN Mktp CA" as different. Now deduped on cleaned text.
-2. **Full coverage:** Gemini failed to label 41% of descriptions. Codex labeled everything.
-3. **Better labeling:** Codex correctly labeled GOODLIFE CLUBS as Entertainment (Gemini said Healthcare), convenience stores as Food (Gemini said Shopping).
+2. **Full coverage:** Gemini failed to label 41% of descriptions. openai labeled everything.
+3. **Better labeling:** openai correctly labeled GOODLIFE CLUBS as Entertainment (Gemini said Healthcare), convenience stores as Food (Gemini said Shopping).
 
 ## Results (Model #5, fine-tuned MiniLM)
 
@@ -38,7 +38,7 @@ Expanded test set from 497 descriptions (small 2025 sample) to full corpus: 114 
 | Rules | 84.2% (87.2% weighted) | 120 |
 | **Fine-tune** | **58.5%** (59.0% weighted) | **376** |
 
-### By category (Codex ground truth)
+### By category (openai ground truth)
 
 | Category | Train Acc | Real Acc (ft-only) | Delta |
 |----------|-----------|-------------------|-------|
@@ -69,11 +69,11 @@ Expanded test set from 497 descriptions (small 2025 sample) to full corpus: 114 
 ## Scripts created
 
 - `scripts/extract_and_evaluate_full.py` — Full pipeline: extract all PDFs, dedup, preprocess, Gemini label, evaluate
-- `scripts/label_with_codex.py` — Codex CLI batch labeling (batches of 15, 100% coverage)
+- `scripts/label_with_openai.py` — openai CLI batch labeling (batches of 15, 100% coverage)
 
 ## Data files
 
 - `data/real/full_descriptions.csv` — All 3,113 extracted descriptions
 - `data/real/full_unique_labeled.csv` — 1,380 raw unique with Gemini + model predictions
-- `data/real/codex_labeled.csv` — 505 cleaned unique with Codex labels
+- `data/real/openai_labeled.csv` — 505 cleaned unique with openai labels
 - `data/real/model_analysis_report.txt` — Detailed 735-line analysis (confusion matrices, confidence distributions, failure patterns)

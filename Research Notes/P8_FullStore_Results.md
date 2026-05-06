@@ -58,9 +58,9 @@ Artifact sizes after the build:
 
 This removed the earlier need to prefilter the external corpus around a small candidate set before retrieval. Still however, it's a big issue of size that needs to be worked on. For now I'm still focusing on improving the actual results though. 
 
-## Benchmark result on the Codex test set
+## Benchmark result on the openai test set
 
-I evaluated the full-store pipeline on `data/real/codex_labeled.csv`.
+I evaluated the full-store pipeline on `data/real/openai_labeled.csv`.
 
 Results on the 505-row unique test set:
 
@@ -179,9 +179,9 @@ Examples:
 
 This full-store setup is materially cleaner than the earlier candidate-filtered KB build because I ingested the external Canada corpus directly instead of shaping the KB around the local benchmark merchant identities.
 
-I did not use `codex_category` labels in the runtime or in the store build.
+I did not use `openai_category` labels in the runtime or in the store build.
 
-The benchmark is still the same Codex-labeled test set, so I should treat the result as a strong internal benchmark improvement rather than the final word on out-of-sample generalization.
+The benchmark is still the same openai-labeled test set, so I should treat the result as a strong internal benchmark improvement rather than the final word on out-of-sample generalization.
 
 ## Verification
 
@@ -193,6 +193,6 @@ I ran the test suite after the full-store changes.
 
 At this stage, I consider the full external ingest complete and successful.
 
-The current system improved from 65.35% to 73.86% unique accuracy and from 72.70% to 83.62% weighted accuracy on the strict Codex benchmark.
+The current system improved from 65.35% to 73.86% unique accuracy and from 72.70% to 83.62% weighted accuracy on the strict openai benchmark.
 
 The remaining work is no longer about loading more of the external corpus. The remaining work is to improve query normalization, lexical search construction, fusion behavior, alias generation, and direct-category gating so the retrieval stack uses the existing corpus more effectively.

@@ -32,9 +32,9 @@ Runtime behavior:
 2. If the KB finds a plausible merchant with useful metadata but not enough confidence for a direct label, that metadata is appended to the transaction text and passed to the fine-tuned classifier.
 3. If there is no useful merchant match, the system falls back to the fine-tuned model alone.
 
-## Results on the Codex test set
+## Results on the openai test set
 
-Evaluation was run on `data/real/codex_labeled.csv` with 505 cleaned unique merchants and 3113 weighted occurrences.
+Evaluation was run on `data/real/openai_labeled.csv` with 505 cleaned unique merchants and 3113 weighted occurrences.
 
 ### Baseline vs knowledge-enabled pipeline
 
@@ -105,9 +105,9 @@ Foursquare-only moved the benchmark from 65.35% / 72.70% to 70.10% / 75.55%. Thi
 
 ### 1. This is not a clean held-out generalization result
 
-The current builder uses `data/real/full_descriptions.csv` to generate candidate merchant names for Foursquare lookup. In this repo, the cleaned merchant identities in `full_descriptions.csv` overlap the Codex test set merchant identities exactly:
+The current builder uses `data/real/full_descriptions.csv` to generate candidate merchant names for Foursquare lookup. In this repo, the cleaned merchant identities in `full_descriptions.csv` overlap the openai test set merchant identities exactly:
 
-- Codex cleaned unique merchants: 504
+- openai cleaned unique merchants: 504
 - Full descriptions cleaned unique merchants: 504
 - Overlap: 504/504
 
@@ -115,7 +115,7 @@ This means the Phase 7 setup is **transductive**, not a strict unseen-merchant h
 
 Important nuance:
 
-- It is **not** label leakage because the KB builder never reads `codex_category`
+- It is **not** label leakage because the KB builder never reads `openai_category`
 - It **does** shape external KB construction around the exact merchant names in the benchmark
 
 This makes the result encouraging, but not final evidence of out-of-sample generalization.

@@ -172,7 +172,7 @@ Based on all this research, the path forward has three pillars:
 
 1. **Merchant Knowledge Base** from Foursquare OS Places (Canada subset). This directly solves the entity knowledge problem. Every production system has one.
 
-2. **LLM-Generated Canadian Training Data.** Use Codex/GPT to generate realistic Canadian transaction descriptions. Seed with real Canadian merchant names from Foursquare. Fine-tune MiniLM on combined data with focal loss. The SME paper validated this exact approach.
+2. **LLM-Generated Canadian Training Data.** Use openai/GPT to generate realistic Canadian transaction descriptions. Seed with real Canadian merchant names from Foursquare. Fine-tune MiniLM on combined data with focal loss. The SME paper validated this exact approach.
 
 3. **Zero-Shot NLI Fallback.** DeBERTa for the long tail of truly unknown merchants where neither the knowledge base nor the fine-tuned model has an answer. Low-confidence gated, only activates when nothing else works.
 

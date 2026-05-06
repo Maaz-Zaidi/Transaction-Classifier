@@ -1,5 +1,5 @@
 # Phase 2: OCR re-evaluation results
-**Date:** 2026-03-28
+**Date:** 2026-03-26
 
 ## Context
 

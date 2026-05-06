@@ -4,7 +4,7 @@
 
 ## Motivation
 
-Phase 8 delivered 73.86% unique accuracy on the Codex test set. With the knowledge base and retrieval pipeline now in place, the system had matured to the point where two pieces of early scaffolding needed to be retired.
+Phase 8 delivered 73.86% unique accuracy on the openai test set. With the knowledge base and retrieval pipeline now in place, the system had matured to the point where two pieces of early scaffolding needed to be retired.
 
 The first was the merchant-identity rules in the rules engine. During earlier phases, before the knowledge base existed, I added about 60 rules that mapped specific brand names directly to categories. COSTCO to Food and Dining, AMAZON to Shopping and Retail, UBER to Transportation, and so on. These were useful as training wheels. They gave the pipeline reasonable coverage on common merchants while I focused on building out the ML model, the preprocessing pipeline, and eventually the external knowledge base. They were never intended to be permanent. The plan was always to let the KB and ML handle merchant identity once those components were mature enough.
 
@@ -89,7 +89,7 @@ The full test suite passes with 153 tests.
 
 I also updated `scripts/evaluate_phase6.py` to load the knowledge base during evaluation. Previously, the evaluation script was not loading the KB at all, which meant the evaluation numbers in earlier phases were measuring rules plus raw ML only. This was inconsistent with how the API actually serves predictions.
 
-I ran the evaluation on the same 505-row Codex test set.
+I ran the evaluation on the same 505-row openai test set.
 
 ### Phase 8 baseline (for comparison)
 

@@ -1,5 +1,5 @@
 # Phase 1: Real bank data results
-**Date:** 2026-03-27
+**Date:** 2026-03-23
 
 ## Dataset
 - **Source:** 20 RBC bank statement PDFs (7 MasterCard, 13 Chequing), 2024-2026

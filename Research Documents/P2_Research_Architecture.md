@@ -1,5 +1,5 @@
 # Phase 2: Architecture research
-**Date:** 2026-03-28
+**Date:** 2026-03-25
 
 ## The problem
 

@@ -32,7 +32,7 @@ That is primarily a retrieval problem, not a classification problem.
 The next retrieval layer must:
 
 - use external and public data only
-- avoid any dependency on `codex_labeled.csv` labels
+- avoid any dependency on `openai_labeled.csv` labels
 - run locally on consumer hardware
 - stay within the repo's on-device privacy constraints
 - improve recall without losing the precision of strong direct KB hits
@@ -271,7 +271,7 @@ This version should be evaluated more carefully than Phase 7.
 
 ### Holdout discipline
 
-- do not build the retrieval store from `codex_labeled.csv`
+- do not build the retrieval store from `openai_labeled.csv`
 - do not filter the external store using benchmark merchant identities
 - keep a clean unseen-merchant evaluation split if possible
 

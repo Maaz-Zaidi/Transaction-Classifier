@@ -32,15 +32,15 @@ The original hypothesis was wrong. I thought the problem was WordPiece tokenizat
 
 3. The real bottleneck is domain mismatch. The synthetic training merchants (mitulshah dataset) simply don't represent what shows up on a Canadian bank statement. No amount of clever augmentation or alternative architectures can fix a data distribution problem.
 
-## Codex Debate (3 rounds)
+## openai Debate (3 rounds)
 
-I ran a structured 3-round debate with Codex (GPT-5.4) about alternative approaches. Summary of each round:
+I ran a structured 3-round debate with openai (GPT-5.4) about alternative approaches. Summary of each round:
 
-**Round 1:** I proposed a semantic preprocessing pipeline (abbreviation expansion via external knowledge, word-level semantic understanding, RAG for brand lookup). Codex raised 5 objections: solving the wrong problem, vague external data dependency, char n-gram unreliability, error propagation without uncertainty strategy, and over-engineering.
+**Round 1:** I proposed a semantic preprocessing pipeline (abbreviation expansion via external knowledge, word-level semantic understanding, RAG for brand lookup). openai raised 5 objections: solving the wrong problem, vague external data dependency, char n-gram unreliability, error propagation without uncertainty strategy, and over-engineering.
 
-**Round 2:** I countered that our preprocessing already handles artifacts (the 376 unmatched strings ARE clean merchant names), that abbreviation expansion isn't the main lever (many failures are readable names like FARM BOY), and proposed an ensemble approach (add semantic signal, don't overwrite). Codex agreed the ensemble idea was the strongest part, recommended a "frozen semantic scorer using pretrained embeddings against per-class prototypes" as a gated low-confidence fallback.
+**Round 2:** I countered that our preprocessing already handles artifacts (the 376 unmatched strings ARE clean merchant names), that abbreviation expansion isn't the main lever (many failures are readable names like FARM BOY), and proposed an ensemble approach (add semantic signal, don't overwrite). openai agreed the ensemble idea was the strongest part, recommended a "frozen semantic scorer using pretrained embeddings against per-class prototypes" as a gated low-confidence fallback.
 
-**Round 3:** I asked for concrete implementation details. Codex was blunt: the frozen semantic scorer would help on descriptive names (REAL FRUIT BUBBLE TEA) but fail on opaque brands (LCBO, CHATIME, FIVE GUYS). "Merchant classification is mostly entity resolution plus lexical matching, not pure semantics. The step change comes from real labeled merchant names, not from centroids."
+**Round 3:** I asked for concrete implementation details. openai was blunt: the frozen semantic scorer would help on descriptive names (REAL FRUIT BUBBLE TEA) but fail on opaque brands (LCBO, CHATIME, FIVE GUYS). "Merchant classification is mostly entity resolution plus lexical matching, not pure semantics. The step change comes from real labeled merchant names, not from centroids."
 
 ## Conclusion
 

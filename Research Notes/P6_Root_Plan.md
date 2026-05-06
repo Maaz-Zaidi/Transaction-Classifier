@@ -59,6 +59,6 @@ Also generate Canadian-specific synthetic data (CRA, MTO, RCSS, CHATIME, etc.) a
 
 ## Success criteria
 
-- Phase 6a: Fine-tune-only accuracy >= 70% on the 505 Codex-labeled test set
+- Phase 6a: Fine-tune-only accuracy >= 70% on the 505 openai-labeled test set
 - Phase 6b: Fine-tune-only accuracy >= 80% on the same test set
 - Both must maintain CPU inference capability

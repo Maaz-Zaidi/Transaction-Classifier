@@ -8,7 +8,7 @@ Phase 9 removed the merchant-identity scaffolding rules and introduced token-awa
 
 ## Current pipeline performance
 
-The Phase 9 evaluation on 505 Codex test samples breaks down as follows:
+The Phase 9 evaluation on 505 openai test samples breaks down as follows:
 
 - Direction: 9 predictions at 100.0%
 - Rules: 13 predictions at 92.3%
@@ -121,11 +121,11 @@ Combined improvement estimate for the full stack:
 - Descriptor override: adds approximately 1% (5 high-confidence fixes)
 - ML retraining on enriched format: adds approximately 5-7% on the remaining ML predictions
 
-Realistic combined target: 85-90% accuracy on the 505-row Codex test set.
+Realistic combined target: 85-90% accuracy on the 505-row openai test set.
 
 ## Implementation results
 
-I implemented all three fixes and ran the evaluation on the 505-row Codex test set.
+I implemented all three fixes and ran the evaluation on the 505-row openai test set.
 
 The Foursquare mapper rebuild updated 384,030 entries in the 1.8M-entry SQLite store. Of those, 326,544 gained a category for the first time (None to something), 27,542 had their category corrected, and only 41 lost a category. KB coverage went from 989,660 mapped entries to 1,316,163.
 
