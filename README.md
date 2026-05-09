@@ -188,12 +188,12 @@ python scripts/evaluate_phase6.py
 
 Evaluates the full pipeline (direction + rules + KB + ML) against `data/real/openai_labeled.csv` (505 unique transactions). Reports accuracy by source, by category, confidence distributions, and error analysis.
 
-## pre-built artifacts not included
+## pre-built artifacts
 
 > [!Note]
-> The trained models (`models/`), knowledge store artifacts (`data/external_kb/`), and evaluation data (`data/real/`) are **not included in this repo** due to size (~12 GB total). The ingestion and training scripts above will rebuild everything from scratch, but that requires HuggingFace access to both gated datasets and takes 1–2 hours.
+> The knowledge store artifacts (`data/external_kb/`) and evaluation data (`data/real/`) are **not included in this repo** due to size (~12 GB total). The ingestion and training scripts above will rebuild everything from scratch, but that requires HuggingFace access to both gated datasets and takes 1–2 hours.
 
-> **If you'd like access to the pre-built knowledge store, trained model checkpoints, or the labeled evaluation data, contact me directly.** I'm happy to share them.
+> All trained models are available on Hugging Face: [maaz-zaidi/transaction-classifier collection](https://huggingface.co/collections/maaz-zaidi/transaction-classifier)
 
 ## tech stack
 
